@@ -24,6 +24,10 @@ desktop.ini
 # Logs
 *.log
 
+# Audio files & Test media
+backend/test_audio/*.wav
+*.wav
+
 # Node (if used later)
 node_modules/
 
