@@ -1,0 +1,261 @@
+"""
+SWARIVA AI — Prisma STT Test Script
+
+Tests the Gnani Prisma Speech-to-Text integration.
+Run from the backend/ directory with the virtual environment activated:
+
+    cd backend
+    python test_prisma.py
+
+This script will:
+1. Verify API key configuration.
+2. Generate a short test WAV file (a sine-wave tone).
+3. Send it to Prisma for transcription (the tone won't produce meaningful text,
+   but it verifies the API connection, authentication, and response format).
+4. If you have a real audio file, you can test with that instead.
+"""
+import asyncio
+import sys
+import struct
+import math
+import json
+import logging
+from pathlib import Path
+
+# ── Setup logging ──
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("test_prisma")
+
+# ── Ensure we can import from backend/ ──
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from config import GNANI_API_KEY
+from gnani_stt import GnaniSTT
+
+
+def generate_test_wav(filepath: Path, duration: float = 2.0, freq: float = 440.0) -> None:
+    """
+    Generate a simple WAV file with a sine wave tone.
+    This is used to test the API connection — Prisma may return an empty
+    transcript for a tone, but the HTTP round-trip will verify auth and format.
+    """
+    sample_rate = 16000
+    num_samples = int(sample_rate * duration)
+    amplitude = 16000
+
+    # Generate samples
+    samples = []
+    for i in range(num_samples):
+        t = i / sample_rate
+        value = int(amplitude * math.sin(2 * math.pi * freq * t))
+        samples.append(struct.pack("<h", value))
+
+    audio_data = b"".join(samples)
+    data_size = len(audio_data)
+
+    # Write WAV header + data
+    with open(filepath, "wb") as f:
+        # RIFF header
+        f.write(b"RIFF")
+        f.write(struct.pack("<I", 36 + data_size))
+        f.write(b"WAVE")
+        # fmt chunk
+        f.write(b"fmt ")
+        f.write(struct.pack("<I", 16))          # chunk size
+        f.write(struct.pack("<H", 1))           # PCM format
+        f.write(struct.pack("<H", 1))           # mono
+        f.write(struct.pack("<I", sample_rate))  # sample rate
+        f.write(struct.pack("<I", sample_rate * 2))  # byte rate
+        f.write(struct.pack("<H", 2))           # block align
+        f.write(struct.pack("<H", 16))          # bits per sample
+        # data chunk
+        f.write(b"data")
+        f.write(struct.pack("<I", data_size))
+        f.write(audio_data)
+
+    logger.info("Generated test WAV: %s (%.1fs, %d Hz)", filepath, duration, freq)
+
+
+async def test_api_connection():
+    """Test 1: Verify API key and basic connectivity."""
+    print("\n" + "=" * 60)
+    print("TEST 1: API Key & Connectivity Check")
+    print("=" * 60)
+
+    # Check API key is loaded (show only first/last 8 chars)
+    if not GNANI_API_KEY or GNANI_API_KEY.startswith("placeholder"):
+        print("❌ FAIL: GNANI_API_KEY is not set in .env")
+        print("   → Open .env and set your real API key.")
+        return False
+
+    masked = GNANI_API_KEY[:8] + "..." + GNANI_API_KEY[-8:]
+    print(f"✅ API key loaded: {masked}")
+
+    try:
+        stt = GnaniSTT()
+        print(f"✅ GnaniSTT client created (model: {stt.model})")
+        return True
+    except ValueError as e:
+        print(f"❌ FAIL: {e}")
+        return False
+
+
+async def test_transcribe_tone():
+    """Test 2: Send a generated tone WAV to Prisma (tests API round-trip)."""
+    print("\n" + "=" * 60)
+    print("TEST 2: Prisma API Round-Trip (Tone WAV)")
+    print("=" * 60)
+
+    test_dir = Path(__file__).resolve().parent / "test_audio"
+    test_dir.mkdir(exist_ok=True)
+    test_file = test_dir / "test_tone.wav"
+
+    # Generate test audio
+    generate_test_wav(test_file)
+    print(f"📁 Test file: {test_file}")
+
+    stt = GnaniSTT()
+    result = await stt.transcribe(test_file, language="english", output_format="transcribe")
+
+    print(f"\n--- API Response ---")
+    print(f"Success:           {result.success}")
+    print(f"Transcript:        '{result.transcript}'")
+    print(f"Detected Language: {result.detected_language}")
+    print(f"Model:             {result.model}")
+    print(f"Request ID:        {result.request_id}")
+    print(f"Processing Time:   {result.processing_time:.2f}s")
+
+    if result.error:
+        print(f"❌ Error: {result.error}")
+        return False
+
+    if result.success:
+        print("\n✅ PASS: Prisma API is working!")
+        print("   (Empty/nonsense transcript is expected for a sine wave tone.)")
+        return True
+    else:
+        print("\n❌ FAIL: API returned success=false")
+        print(f"   Raw response: {json.dumps(result.raw_response, indent=2)}")
+        return False
+
+
+async def test_transcribe_with_real_audio():
+    """
+    Test 3: Transcribe a real speech audio file (if available).
+    Place a file named 'test_speech.wav' in backend/test_audio/ to test.
+    """
+    print("\n" + "=" * 60)
+    print("TEST 3: Real Speech Transcription (Optional)")
+    print("=" * 60)
+
+    test_file = Path(__file__).resolve().parent / "test_audio" / "test_speech.wav"
+
+    if not test_file.exists():
+        print(f"⏭️  SKIPPED: No real audio file found at {test_file}")
+        print("   To test with real speech:")
+        print("   1. Record a short clip (< 30 seconds) saying something in English.")
+        print("   2. Save it as 'test_speech.wav' in backend/test_audio/")
+        print("   3. Re-run this script.")
+        return None
+
+    stt = GnaniSTT()
+
+    # Test with auto language detection
+    print(f"📁 Testing with: {test_file}")
+    result = await stt.transcribe(test_file, language="auto")
+
+    print(f"\n--- API Response ---")
+    print(f"Success:           {result.success}")
+    print(f"Transcript:        '{result.transcript}'")
+    print(f"Detected Language: {result.detected_language}")
+    print(f"Processing Time:   {result.processing_time:.2f}s")
+
+    if result.error:
+        print(f"❌ Error: {result.error}")
+        return False
+
+    if result.success and result.transcript:
+        print("\n✅ PASS: Real speech transcribed successfully!")
+        return True
+    else:
+        print("\n⚠️  API returned empty transcript for your audio.")
+        return False
+
+
+async def test_language_support():
+    """Test 4: Verify language codes are accepted by the API."""
+    print("\n" + "=" * 60)
+    print("TEST 4: Language Code Validation")
+    print("=" * 60)
+
+    stt = GnaniSTT()
+
+    # Test language resolution
+    languages = {
+        "english": "en-IN",
+        "hindi": "hi-IN",
+        "telugu": "te-IN",
+        "auto": "indic-auto",
+    }
+
+    all_pass = True
+    for name, expected_code in languages.items():
+        resolved = stt._resolve_language(name)
+        status = "✅" if resolved == expected_code else "❌"
+        print(f"  {status} '{name}' → '{resolved}' (expected: '{expected_code}')")
+        if resolved != expected_code:
+            all_pass = False
+
+    if all_pass:
+        print("\n✅ PASS: All language codes resolve correctly.")
+    return all_pass
+
+
+async def main():
+    """Run all Prisma STT tests sequentially."""
+    print("=" * 60)
+    print("  SWARIVA AI — Gnani Prisma STT Test Suite")
+    print("=" * 60)
+
+    results = {}
+
+    # Test 1: API key check
+    results["api_key"] = await test_api_connection()
+    if not results["api_key"]:
+        print("\n🛑 Cannot proceed without a valid API key. Fix .env and retry.")
+        return
+
+    # Test 2: API round-trip with tone
+    results["api_roundtrip"] = await test_transcribe_tone()
+
+    # Test 3: Real speech (optional)
+    results["real_speech"] = await test_transcribe_with_real_audio()
+
+    # Test 4: Language codes
+    results["languages"] = await test_language_support()
+
+    # Summary
+    print("\n" + "=" * 60)
+    print("  TEST SUMMARY")
+    print("=" * 60)
+    for name, passed in results.items():
+        if passed is None:
+            icon = "⏭️ "
+            label = "SKIPPED"
+        elif passed:
+            icon = "✅"
+            label = "PASS"
+        else:
+            icon = "❌"
+            label = "FAIL"
+        print(f"  {icon} {name}: {label}")
+
+    print("\n" + "=" * 60)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
