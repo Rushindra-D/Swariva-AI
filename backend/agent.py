@@ -400,3 +400,4 @@ class SWARIVAAgent:
 
 # Global singleton instance for application use
 agent = SWARIVAAgent()
+

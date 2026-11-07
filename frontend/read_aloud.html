@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — Read Aloud Studio</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">Read Aloud Studio</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="chat.html" class="nav-link">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link">Voice Assistant</a></li>
+        <li><a href="reminders.html" class="nav-link">Reminders</a></li>
+        <li><a href="read_aloud.html" class="nav-link active">Read Aloud</a></li>
+        <li><a href="history.html" class="nav-link">History</a></li>
+        <li><a href="settings.html" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width: 850px; padding-top: 2rem;">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem;">Read Aloud Studio</h1>
+      <p style="margin-top: 0.25rem;">Type or paste any text below. Gnani Timbre will synthesize it into natural, expressive Indian speech.</p>
+    </div>
+
+    <div class="card" style="margin-bottom: 2rem;">
+      <div style="margin-bottom: 1.25rem;">
+        <label for="read-text-input" class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Text to Read Aloud</label>
+        <textarea
+          id="read-text-input"
+          class="text-input"
+          rows="6"
+          placeholder="Paste articles, letters, study notes, or questions in English, Telugu, or Hindi here..."
+          style="width: 100%; resize: vertical; font-size: 1.05rem; line-height: 1.6;"
+        ></textarea>
+      </div>
+
+      <!-- Controls Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div>
+          <label for="read-lang-select" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Language</label>
+          <select id="read-lang-select" class="select-input">
+            <option value="auto">🌐 Auto-Detect</option>
+            <option value="english">🇬🇧 English (en-IN)</option>
+            <option value="hindi">🇮🇳 Hindi (hi-IN)</option>
+            <option value="telugu">🇮🇳 Telugu (te-IN)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="read-voice-select" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Timbre Voice</label>
+          <select id="read-voice-select" class="select-input">
+            <option value="Nalini">Nalini (Female, Expressive)</option>
+            <option value="Kaveri">Kaveri (Female, Bright)</option>
+            <option value="Deepak">Deepak (Male, Conversational)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="read-speed-slider" class="form-label" style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-weight: 600;">
+            <span>Speed</span>
+            <span id="read-speed-label" style="color: var(--accent-cyan);">1.0x</span>
+          </label>
+          <input
+            type="range"
+            id="read-speed-slider"
+            min="0.7"
+            max="1.5"
+            step="0.1"
+            value="1.0"
+            style="width: 100%; accent-color: var(--primary-purple); cursor: pointer;"
+          >
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="speak-aloud-btn" class="btn btn-primary" style="padding: 0.8rem 1.8rem; font-size: 1rem;">
+            <span>🔊</span> Speak Aloud
+          </button>
+          <button id="stop-aloud-btn" class="btn btn-secondary" style="padding: 0.8rem 1.4rem;">
+            <span>⏹</span> Stop
+          </button>
+        </div>
+
+        <div>
+          <button id="download-audio-btn" class="btn btn-secondary" style="padding: 0.8rem 1.25rem;" disabled>
+            <span>⬇️</span> Download WAV
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Playback Status -->
+      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
+        <span id="read-status-label" style="font-size: 0.9rem; color: var(--text-muted);">Ready to synthesize</span>
+        <span style="font-size: 0.82rem; color: var(--accent-cyan); font-weight: 600;">Powered by Gnani Timbre</span>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/read_aloud.js"></script>
+</body>
+</html>

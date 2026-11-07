@@ -49,3 +49,4 @@ async def app_info():
         },
         "voice_catalog": TTS_VOICES,
     }
+

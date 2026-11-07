@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — Sign In / Sign Up</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">User Authentication</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="chat.html" class="nav-link">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link">Voice Assistant</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width: 480px; padding-top: 3.5rem;">
+    <!-- Architecture Notice (Rule 9: Clear disclosure of Phase 5 Supabase Auth) -->
+    <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid var(--border-bright); padding: 0.85rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
+      <strong style="color: var(--accent-cyan);">🔐 Phase 5 Architecture Notice:</strong>
+      Full cloud authentication with Supabase PostgreSQL and secure JWT tokens will be integrated in Phase 5. You can use guest sign-in below to test all voice features immediately.
+    </div>
+
+    <div class="card" style="padding: 2.25rem 2rem;">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <div class="brand-logo-icon" style="margin: 0 auto 0.75rem; width: 48px; height: 48px; font-size: 1.6rem;">🎙️</div>
+        <h1 style="font-size: 1.6rem;">Welcome to SWARIVA AI</h1>
+        <p style="font-size: 0.9rem; margin-top: 0.25rem;">Sign in to save your personal preferences and reminders.</p>
+      </div>
+
+      <!-- Auth Form -->
+      <form id="auth-form" style="display: flex; flex-direction: column; gap: 1.15rem;">
+        <div>
+          <label for="auth-name" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Full Name</label>
+          <input type="text" id="auth-name" class="text-input" placeholder="e.g. Ramesh Kumar" value="Guest User" required>
+        </div>
+
+        <div>
+          <label for="auth-email" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Email Address</label>
+          <input type="email" id="auth-email" class="text-input" placeholder="name@example.com" value="guest@swariva.ai" required>
+        </div>
+
+        <div>
+          <label for="auth-lang" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Primary Language</label>
+          <select id="auth-lang" class="select-input">
+            <option value="auto">Auto-Detect</option>
+            <option value="english">English (en-IN)</option>
+            <option value="hindi">Hindi (hi-IN)</option>
+            <option value="telugu">Telugu (te-IN)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; margin-top: 0.5rem;">
+          Sign In & Enter Dashboard
+        </button>
+
+        <a href="chat.html" class="btn btn-secondary" style="width: 100%; padding: 0.8rem; font-size: 0.95rem; text-align: center;">
+          ⚡ Continue as Guest (Skip)
+        </a>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('auth-form');
+      const nameInput = document.getElementById('auth-name');
+      const langSelect = document.getElementById('auth-lang');
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = nameInput.value.trim() || 'User';
+        const lang = langSelect.value || 'auto';
+
+        localStorage.setItem('swariva_user_name', name);
+        setStoredLanguage(lang);
+
+        showToast(`Welcome, ${name}! Redirecting to AI Chat...`, 'success');
+        setTimeout(() => {
+          window.location.href = 'chat.html';
+        }, 800);
+      });
+    });
+  </script>
+</body>
+</html>

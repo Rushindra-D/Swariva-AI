@@ -51,6 +51,14 @@ def test_app_info():
     assert "voice_catalog" in data
 
 
+def test_frontend_mount():
+    """Verify GET /app/ serves the landing page HTML."""
+    response = client.get("/app/")
+    assert response.status_code == 200
+    assert "SWARIVA AI" in response.text
+    assert "<!DOCTYPE html>" in response.text
+
+
 # ── 2. Multilingual Text Chat Tests ──
 def test_text_chat_english():
     """Verify English text conversation."""
@@ -217,3 +225,4 @@ async def test_voice_chat_pipeline_mocked():
         assert "metadata" in result
         assert result["metadata"]["stt_model"] == "prisma-v3.0"
         assert result["metadata"]["tts_model"] == "timbre-v2.5"
+

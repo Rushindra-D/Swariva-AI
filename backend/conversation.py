@@ -118,3 +118,4 @@ class ConversationManager:
 
 # Global singleton instance for application use
 conversation_manager = ConversationManager()
+

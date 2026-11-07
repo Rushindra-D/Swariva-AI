@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — A Voice That Understands You</title>
+  <meta name="description" content="Multilingual voice-first intelligent companion powered by Gnani AI Prisma and Timbre speech models.">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">A voice that understands you</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link active">Home</a></li>
+        <li><a href="chat.html" class="nav-link">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link">Voice Assistant</a></li>
+        <li><a href="reminders.html" class="nav-link">Reminders</a></li>
+        <li><a href="read_aloud.html" class="nav-link">Read Aloud</a></li>
+        <li><a href="history.html" class="nav-link">History</a></li>
+        <li><a href="settings.html" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <div class="status-pill" id="backend-status-pill" title="Backend connection status">
+        <span class="status-dot"></span>
+        <span id="backend-status-text">Gnani AI Online</span>
+      </div>
+      <a href="auth.html" class="btn btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.88rem;">Sign In</a>
+      <a href="chat.html" class="btn btn-primary" style="padding: 0.45rem 1.1rem; font-size: 0.88rem;">Launch App</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="container" style="text-align: center; padding-top: 4rem; padding-bottom: 3.5rem;">
+    <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(139, 92, 246, 0.12); border: 1px solid var(--border-bright); padding: 0.4rem 1rem; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; color: var(--accent-cyan); margin-bottom: 1.5rem;">
+      <span>🏆</span> Great Indian AI Internship Challenge by Gnani AI
+    </div>
+
+    <h1 style="font-size: clamp(2.5rem, 5vw, 4rem); max-width: 900px; margin: 0 auto 1.25rem; font-weight: 800;">
+      A Voice That <span style="background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Understands You.</span>
+    </h1>
+
+    <p style="font-size: 1.2rem; max-width: 720px; margin: 0 auto 2.5rem; color: var(--text-secondary); line-height: 1.6;">
+      An empathetic, multilingual voice companion designed for people with visual impairments, elderly individuals, and those seeking effortless voice communication in <strong>Telugu</strong>, <strong>Hindi</strong>, and <strong>English</strong>.
+    </p>
+
+    <!-- Quick Action Launch Buttons -->
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3.5rem;">
+      <a href="voice.html" class="btn btn-primary" style="padding: 0.95rem 2rem; font-size: 1.05rem;">
+        <span>🎙️</span> Start Speaking
+      </a>
+      <a href="chat.html" class="btn btn-secondary" style="padding: 0.95rem 1.8rem; font-size: 1.05rem;">
+        <span>💬</span> Open Chat Dashboard
+      </a>
+      <a href="read_aloud.html" class="btn btn-secondary" style="padding: 0.95rem 1.8rem; font-size: 1.05rem;">
+        <span>🔊</span> Read Aloud Studio
+      </a>
+    </div>
+
+    <!-- Live Interactive Mic Teaser -->
+    <div class="card" style="max-width: 780px; margin: 0 auto; background: var(--bg-glass); border-color: var(--border-bright);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-highlight);">⚡ Powered by Genuine Gnani Speech Models</span>
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Prisma v3.0 (STT) • Timbre v2.5 (TTS)</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left; margin-top: 1.5rem;">
+        <div style="padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-md);">
+          <div style="font-size: 1.5rem; margin-bottom: 0.4rem;">🇮🇳</div>
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Multilingual Indic</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">Telugu, Hindi, Indian English, and natural code-mixed dialogues.</p>
+        </div>
+
+        <div style="padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-md);">
+          <div style="font-size: 1.5rem; margin-bottom: 0.4rem;">👁️</div>
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Accessibility First</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">Large high-contrast touch targets, screen-reader support, audio feedback.</p>
+        </div>
+
+        <div style="padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-md);">
+          <div style="font-size: 1.5rem; margin-bottom: 0.4rem;">💊</div>
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Daily Reminders</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">Medicine alerts and routine scheduling with spoken voice alarms.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Key Features Grid -->
+  <section class="container" style="padding-top: 1rem; padding-bottom: 4rem;">
+    <h2 style="text-align: center; margin-bottom: 2.5rem; font-size: 2rem;">Built for True Everyday Accessibility</h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+      <div class="card">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">🎙️</div>
+        <h3 style="margin-bottom: 0.5rem;">End-to-End Voice Interaction</h3>
+        <p>Speak naturally into your device. Gnani Prisma recognizes Indian speech patterns with high accuracy, the AI reasons contextually, and Gnani Timbre answers back in a human voice.</p>
+        <a href="voice.html" style="display: inline-block; margin-top: 1rem; font-weight: 600; font-size: 0.9rem;">Try Voice Assistant →</a>
+      </div>
+
+      <div class="card">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">💬</div>
+        <h3 style="margin-bottom: 0.5rem;">Intelligent Conversation Memory</h3>
+        <p>SWARIVA AI tracks conversation context across multiple turns. Ask follow-up questions, request explanations, or explore topics seamlessly without repeating yourself.</p>
+        <a href="chat.html" style="display: inline-block; margin-top: 1rem; font-weight: 600; font-size: 0.9rem;">Open AI Chat →</a>
+      </div>
+
+      <div class="card">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">⏰</div>
+        <h3 style="margin-bottom: 0.5rem;">Spoken Medicine & Task Reminders</h3>
+        <p>Never miss your blood pressure pill or doctor's appointment. Keep track of daily schedules with one-click voice readout via Gnani Timbre.</p>
+        <a href="reminders.html" style="display: inline-block; margin-top: 1rem; font-weight: 600; font-size: 0.9rem;">Manage Reminders →</a>
+      </div>
+
+      <div class="card">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">🔊</div>
+        <h3 style="margin-bottom: 0.5rem;">Read Aloud Studio</h3>
+        <p>Type or paste any paragraph, letter, or news snippet. Hear it spoken clearly in your choice of Indian voices with adjustable playback speed.</p>
+        <a href="read_aloud.html" style="display: inline-block; margin-top: 1rem; font-weight: 600; font-size: 0.9rem;">Read Aloud →</a>
+      </div>
+
+      <div class="card">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">🛡️</div>
+        <h3 style="margin-bottom: 0.5rem;">Ethical & Safe AI Guardrails</h3>
+        <p>SWARIVA AI adheres strictly to safety boundaries. It provides comforting companionship while maintaining clear disclaimers that it does not replace certified doctors or emergency hotlines.</p>
+        <a href="settings.html" style="display: inline-block; margin-top: 1rem; font-weight: 600; font-size: 0.9rem;">View Safety & Settings →</a>
+      </div>
+
+      <div class="card">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">♿</div>
+        <h3 style="margin-bottom: 0.5rem;">High-Contrast & Large Fonts</h3>
+        <p>Personalize your experience with one-click High-Contrast Black & Gold mode, large typography, and keyboard accessibility for screen-reader tools.</p>
+        <a href="settings.html" style="display: inline-block; margin-top: 1rem; font-weight: 600; font-size: 0.9rem;">Accessibility Options →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="container" style="padding: 0;">
+      <p class="footer-brand">SWARIVA AI — A Voice That Understands You</p>
+      <p class="footer-credits">
+        Developed for the <strong>Great Indian AI Internship Challenge by Gnani AI</strong> • Powered by Gnani Prisma & Timbre
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    // Live backend connection check for status pill
+    document.addEventListener('DOMContentLoaded', async () => {
+      const pill = document.getElementById('backend-status-pill');
+      const text = document.getElementById('backend-status-text');
+      try {
+        const health = await SwarivaAPI.checkHealth();
+        if (health.status === 'healthy') {
+          pill.style.background = 'rgba(16, 185, 129, 0.12)';
+          pill.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          text.textContent = 'Gnani AI Online';
+        } else {
+          pill.style.background = 'rgba(245, 158, 11, 0.12)';
+          pill.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+          text.textContent = 'Backend Starting...';
+        }
+      } catch {
+        pill.style.background = 'rgba(239, 68, 68, 0.12)';
+        pill.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        text.textContent = 'Backend Offline';
+      }
+    });
+  </script>
+</body>
+</html>

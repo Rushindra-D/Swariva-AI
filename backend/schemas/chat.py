@@ -45,3 +45,4 @@ class ChatHistoryResponse(BaseModel):
     session_id: str
     total_messages: int
     messages: List[MessageItem]
+

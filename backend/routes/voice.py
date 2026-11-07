@@ -173,3 +173,4 @@ async def read_aloud_endpoint(req: TextToSpeechRequest):
         language=tts_result.language,
         size_bytes=len(tts_result.audio_bytes),
     )
+

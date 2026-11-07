@@ -36,3 +36,4 @@ class TextToSpeechResponse(BaseModel):
     language: str
     size_bytes: int = 0
     error: Optional[str] = None
+

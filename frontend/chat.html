@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — Chat Dashboard</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/chat.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">AI Chat Dashboard</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="chat.html" class="nav-link active">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link">Voice Assistant</a></li>
+        <li><a href="reminders.html" class="nav-link">Reminders</a></li>
+        <li><a href="read_aloud.html" class="nav-link">Read Aloud</a></li>
+        <li><a href="history.html" class="nav-link">History</a></li>
+        <li><a href="settings.html" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <button id="stop-audio-btn" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.82rem;" title="Halt current voice speech">
+        ⏹ Stop Speaking
+      </button>
+      <a href="voice.html" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.85rem;">
+        🎙️ Voice Mode
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Chat Workspace -->
+  <main class="container" style="padding-top: 1.25rem; padding-bottom: 1.25rem;">
+    <div class="chat-layout">
+      <!-- Sidebar -->
+      <aside class="chat-sidebar" role="complementary" aria-label="Chat Controls and Sessions">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Controls</span>
+          <button id="new-chat-btn" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;" title="Start a fresh conversation">
+            + New Chat
+          </button>
+        </div>
+
+        <!-- Language Preference -->
+        <div class="lang-selector-box">
+          <label for="language-select" class="form-label">Response Language</label>
+          <select id="language-select" class="select-input">
+            <option value="auto">🌐 Auto-Detect</option>
+            <option value="english">🇬🇧 English (en-IN)</option>
+            <option value="hindi">🇮🇳 Hindi (hi-IN)</option>
+            <option value="telugu">🇮🇳 Telugu (te-IN)</option>
+          </select>
+        </div>
+
+        <!-- Voice Preference -->
+        <div class="lang-selector-box">
+          <label for="voice-select" class="form-label">Gnani Timbre Voice</label>
+          <select id="voice-select" class="select-input">
+            <option value="Nalini">Nalini (Female, Expressive)</option>
+            <option value="Kaveri">Kaveri (Female, Bright)</option>
+            <option value="Deepak">Deepak (Male, Conversational)</option>
+          </select>
+        </div>
+
+        <!-- Active Session Info -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); padding: 0.75rem; border-radius: var(--radius-md);">
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px;">Active Session</span>
+          <code id="session-display" style="font-size: 0.78rem; color: var(--accent-cyan); word-break: break-all;">Loading...</code>
+        </div>
+
+        <!-- Quick Prompts -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: auto;">
+          <span class="sidebar-title" style="font-size: 0.78rem;">Suggested Prompts</span>
+          <button class="btn btn-secondary" style="text-align: left; justify-content: flex-start; padding: 0.5rem 0.75rem; font-size: 0.82rem;" onclick="document.getElementById('chat-input').value='Who are you and how can you help me?'; document.getElementById('send-btn').click();">
+            🤖 Who are you?
+          </button>
+          <button class="btn btn-secondary" style="text-align: left; justify-content: flex-start; padding: 0.5rem 0.75rem; font-size: 0.82rem;" onclick="document.getElementById('chat-input').value='Remind me to take my medicine at 8 PM'; document.getElementById('send-btn').click();">
+            💊 Medicine reminder
+          </button>
+          <button class="btn btn-secondary" style="text-align: left; justify-content: flex-start; padding: 0.5rem 0.75rem; font-size: 0.82rem;" onclick="document.getElementById('chat-input').value='నమస్కారం! మీరు నాకు ఎలా సహాయం చేయగలరు?'; document.getElementById('send-btn').click();">
+            🇮🇳 Telugu greeting
+          </button>
+        </div>
+
+        <!-- Clear Session Context -->
+        <button id="clear-chat-btn" class="btn btn-danger" style="width: 100%; font-size: 0.85rem; padding: 0.55rem;">
+          🗑️ Clear Conversation
+        </button>
+      </aside>
+
+      <!-- Main Conversation Stream -->
+      <section class="chat-main" role="main" aria-label="Conversation with Swariva AI">
+        <!-- Header -->
+        <div class="chat-main-header">
+          <div class="chat-header-info">
+            <div class="chat-agent-avatar">S</div>
+            <div class="chat-agent-meta">
+              <h3>SWARIVA AI Companion</h3>
+              <span>Powered by Gnani Prisma & Timbre • Active</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="voice.html" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+              🎙️ Fullscreen Mic
+            </a>
+          </div>
+        </div>
+
+        <!-- Messages Stream -->
+        <div id="conversation-stream" class="conversation-stream" role="log" aria-live="polite">
+          <!-- Populated dynamically by chat.js -->
+        </div>
+
+        <!-- Active Recording Waveform Banner -->
+        <div id="recording-bar" class="recording-bar" role="region" aria-label="Microphone Recording in Progress">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="status-dot" style="background: #ef4444;"></span>
+            <span>Recording your voice for Gnani Prisma STT...</span>
+            <span id="recording-timer" style="font-weight: 700; color: #fff;">00:00 / 00:30</span>
+          </div>
+          <button class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;" onclick="document.getElementById('mic-btn').click();">
+            Stop & Process
+          </button>
+        </div>
+
+        <!-- Input Bar -->
+        <div class="chat-input-container">
+          <canvas id="chat-waveform" class="waveform-canvas" height="35" style="height: 35px; display: none;"></canvas>
+
+          <div class="input-row">
+            <button id="mic-btn" class="mic-toggle-btn" title="Speak to Swariva AI via Gnani Prisma (click to record)" aria-label="Voice input toggle">
+              🎙️
+            </button>
+            <input
+              type="text"
+              id="chat-input"
+              class="chat-input"
+              placeholder="Type your message or tap the mic to speak (English, Telugu, Hindi)..."
+              autocomplete="off"
+              aria-label="Your message to Swariva AI"
+            />
+            <button id="send-btn" class="send-btn" title="Send message" aria-label="Send message">
+              ➤
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/recorder.js"></script>
+  <script src="js/chat.js"></script>
+</body>
+</html>

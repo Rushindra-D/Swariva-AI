@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — Conversation History</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">Conversation History</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="chat.html" class="nav-link">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link">Voice Assistant</a></li>
+        <li><a href="reminders.html" class="nav-link">Reminders</a></li>
+        <li><a href="read_aloud.html" class="nav-link">Read Aloud</a></li>
+        <li><a href="history.html" class="nav-link active">History</a></li>
+        <li><a href="settings.html" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width: 900px; padding-top: 2rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div>
+        <h1 style="font-size: 2rem;">Conversation History</h1>
+        <p style="margin-top: 0.25rem;">Review past dialogue turns, transcripts, and assistant answers recorded during your sessions.</p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="export-history-btn" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.5rem 1rem;">
+          📥 Export Log
+        </button>
+        <button id="clear-all-history-btn" class="btn btn-danger" style="font-size: 0.88rem; padding: 0.5rem 1rem;">
+          🗑️ Clear Current Session
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Session Filter Card -->
+    <div class="card" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1rem 1.5rem;">
+      <div>
+        <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Inspecting Session ID:</span>
+        <code id="history-session-id" style="display: block; font-size: 0.92rem; color: var(--accent-cyan); margin-top: 2px;">Loading...</code>
+      </div>
+      <button id="refresh-history-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <!-- Message List Container -->
+    <div id="history-messages-list" style="display: flex; flex-direction: column; gap: 1rem;">
+      <!-- Populated dynamically -->
+    </div>
+
+    <div id="history-empty-state" class="card" style="display: none; text-align: center; padding: 3rem 1.5rem;">
+      <span style="font-size: 3rem;">💬</span>
+      <h4 style="margin-top: 0.75rem;">No Messages in Active Session</h4>
+      <p style="margin-top: 0.35rem;">Go to the <a href="chat.html">AI Chat</a> or <a href="voice.html">Voice Assistant</a> to start a conversation.</p>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/audio.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const sessionIdDisplay = document.getElementById('history-session-id');
+      const messagesList = document.getElementById('history-messages-list');
+      const emptyState = document.getElementById('history-empty-state');
+      const clearBtn = document.getElementById('clear-all-history-btn');
+      const exportBtn = document.getElementById('export-history-btn');
+      const refreshBtn = document.getElementById('refresh-history-btn');
+
+      const sessionId = getActiveSessionId();
+      if (sessionIdDisplay) sessionIdDisplay.textContent = sessionId;
+
+      let currentMessages = [];
+
+      async function loadHistory() {
+        messagesList.innerHTML = '';
+        try {
+          const res = await SwarivaAPI.getHistory(sessionId);
+          currentMessages = res.messages || [];
+
+          if (currentMessages.length === 0) {
+            emptyState.style.display = 'block';
+            return;
+          }
+          emptyState.style.display = 'none';
+
+          currentMessages.forEach((msg, idx) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.padding = '1.25rem';
+            card.style.borderLeft = msg.role === 'user' ? '4px solid #3b82f6' : '4px solid #8b5cf6';
+
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.justifyContent = 'space-between';
+            header.style.marginBottom = '0.5rem';
+
+            const roleBadge = document.createElement('span');
+            roleBadge.style.fontWeight = '700';
+            roleBadge.style.fontSize = '0.85rem';
+            roleBadge.style.color = msg.role === 'user' ? '#60a5fa' : '#c084fc';
+            roleBadge.textContent = msg.role === 'user' ? '👤 User' : '🎙️ Swariva AI';
+
+            const timeSpan = document.createElement('span');
+            timeSpan.style.fontSize = '0.78rem';
+            timeSpan.style.color = 'var(--text-muted)';
+            timeSpan.textContent = msg.timestamp ? new Date(msg.timestamp * 1000).toLocaleTimeString() : `#${idx + 1}`;
+
+            header.appendChild(roleBadge);
+            header.appendChild(timeSpan);
+
+            const contentP = document.createElement('p');
+            contentP.style.color = 'var(--text-primary)';
+            contentP.style.fontSize = '0.98rem';
+            contentP.style.lineHeight = '1.5';
+            contentP.textContent = msg.content;
+
+            card.appendChild(header);
+            card.appendChild(contentP);
+            messagesList.appendChild(card);
+          });
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      }
+
+      if (refreshBtn) refreshBtn.addEventListener('click', loadHistory);
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', async () => {
+          if (confirm('Clear message history for this session?')) {
+            try {
+              await SwarivaAPI.clearSession(sessionId);
+              showToast('Session history cleared', 'success');
+              loadHistory();
+            } catch (err) {
+              showToast(err.message, 'error');
+            }
+          }
+        });
+      }
+
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          if (currentMessages.length === 0) {
+            showToast('No messages to export.', 'info');
+            return;
+          }
+          const text = currentMessages
+            .map((m) => `[${m.role.toUpperCase()}] ${m.content}`)
+            .join('\n\n');
+          const blob = new Blob([text], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `swariva_conversation_${sessionId}.txt`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('Transcript exported!', 'success');
+        });
+      }
+
+      loadHistory();
+    });
+  </script>
+</body>
+</html>

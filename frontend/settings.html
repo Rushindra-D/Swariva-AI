@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — Settings & Accessibility</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">Settings & Preferences</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="chat.html" class="nav-link">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link">Voice Assistant</a></li>
+        <li><a href="reminders.html" class="nav-link">Reminders</a></li>
+        <li><a href="read_aloud.html" class="nav-link">Read Aloud</a></li>
+        <li><a href="history.html" class="nav-link">History</a></li>
+        <li><a href="settings.html" class="nav-link active">Settings</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width: 800px; padding-top: 2rem;">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 2rem;">Settings & Accessibility</h1>
+      <p style="margin-top: 0.25rem;">Customize your voice preferences, display accessibility, and backend connectivity.</p>
+    </div>
+
+    <!-- Section 1: Accessibility Options -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h3 style="margin-bottom: 1.25rem;">👁️ Accessibility & Display</h3>
+
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <!-- High Contrast Mode -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+          <div>
+            <label for="setting-contrast" style="font-weight: 600; font-size: 1rem; display: block;">High Contrast Mode</label>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Enables high-contrast pure black and bright borders for low-vision users.</span>
+          </div>
+          <input type="checkbox" id="setting-contrast" style="width: 22px; height: 22px; accent-color: var(--primary-purple); cursor: pointer;">
+        </div>
+
+        <!-- Font Size -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+          <div>
+            <label for="setting-fontsize" style="font-weight: 600; font-size: 1rem; display: block;">Typography Size</label>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Enlarge text across all pages for enhanced readability.</span>
+          </div>
+          <select id="setting-fontsize" class="select-input" style="width: 160px;">
+            <option value="normal">Default (16px)</option>
+            <option value="large">Large (18px)</option>
+            <option value="xlarge">Extra Large (20px)</option>
+          </select>
+        </div>
+
+        <!-- Auto-play Audio -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+          <div>
+            <label for="setting-autoplay" style="font-weight: 600; font-size: 1rem; display: block;">Auto-play Voice Responses</label>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Automatically speaks Swariva's answers aloud when received.</span>
+          </div>
+          <input type="checkbox" id="setting-autoplay" checked style="width: 22px; height: 22px; accent-color: var(--primary-purple); cursor: pointer;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Speech & Language Preferences -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h3 style="margin-bottom: 1.25rem;">🎙️ Speech & Model Configuration</h3>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+        <div>
+          <label for="setting-lang" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Preferred Language</label>
+          <select id="setting-lang" class="select-input">
+            <option value="auto">🌐 Auto-Detect</option>
+            <option value="english">🇬🇧 English (en-IN)</option>
+            <option value="hindi">🇮🇳 Hindi (hi-IN)</option>
+            <option value="telugu">🇮🇳 Telugu (te-IN)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="setting-voice" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Default Timbre Voice</label>
+          <select id="setting-voice" class="select-input">
+            <option value="Nalini">Nalini (Female, Expressive)</option>
+            <option value="Kaveri">Kaveri (Female, Bright)</option>
+            <option value="Deepak">Deepak (Male, Conversational)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Backend API Connection -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h3 style="margin-bottom: 1.25rem;">🔌 Backend Connectivity</h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Configure the base URL of your FastAPI backend. By default, it connects to your local machine at <code>http://127.0.0.1:8000</code>.
+      </p>
+
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <input type="text" id="setting-api-url" class="text-input" style="flex: 1; min-width: 250px;" placeholder="http://127.0.0.1:8000">
+        <button id="test-conn-btn" class="btn btn-secondary">
+          Test Connection
+        </button>
+      </div>
+    </div>
+
+    <!-- Section 4: Save & Reset -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
+      <button id="save-settings-btn" class="btn btn-primary" style="padding: 0.85rem 2rem; font-size: 1rem;">
+        <span>💾</span> Save Preferences
+      </button>
+
+      <button id="reset-data-btn" class="btn btn-danger" style="padding: 0.85rem 1.4rem;">
+        Reset All Local Data
+      </button>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/settings.js"></script>
+</body>
+</html>

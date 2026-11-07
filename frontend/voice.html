@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — Voice Assistant</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">Voice Assistant Mode</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="chat.html" class="nav-link">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link active">Voice Assistant</a></li>
+        <li><a href="reminders.html" class="nav-link">Reminders</a></li>
+        <li><a href="read_aloud.html" class="nav-link">Read Aloud</a></li>
+        <li><a href="history.html" class="nav-link">History</a></li>
+        <li><a href="settings.html" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a href="chat.html" class="btn btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.88rem;">
+        💬 Switch to Text Chat
+      </a>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 850px; text-align: center; padding-top: 2rem;">
+    <!-- Accessibility Announcement -->
+    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--border-bright); padding: 0.6rem 1rem; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; font-size: 0.88rem;">
+      <span>♿</span>
+      <span>Accessible Voice Mode: Tap the microphone or press <strong>Spacebar</strong> to speak.</span>
+    </div>
+
+    <!-- Language & Voice Config Bar -->
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <label for="voice-page-lang" style="font-size: 0.88rem; font-weight: 600;">Language:</label>
+        <select id="voice-page-lang" class="select-input" style="width: auto; padding: 0.4rem 0.8rem;">
+          <option value="auto">🌐 Auto-Detect</option>
+          <option value="english">🇬🇧 English</option>
+          <option value="hindi">🇮🇳 Hindi</option>
+          <option value="telugu">🇮🇳 Telugu</option>
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <label for="voice-page-voice" style="font-size: 0.88rem; font-weight: 600;">Timbre Voice:</label>
+        <select id="voice-page-voice" class="select-input" style="width: auto; padding: 0.4rem 0.8rem;">
+          <option value="Nalini">Nalini (Female)</option>
+          <option value="Kaveri">Kaveri (Female, Bright)</option>
+          <option value="Deepak">Deepak (Male)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Giant Central Microphone Interaction -->
+    <div class="card mic-hero-container" style="background: var(--bg-card); border-color: var(--border-bright); margin-bottom: 2rem;">
+      <button
+        id="giant-mic-btn"
+        class="giant-mic-btn"
+        aria-label="Start Voice Recording. Press to speak into Swariva AI."
+        title="Click to start/stop speaking"
+      >
+        🎙️
+      </button>
+
+      <div id="mic-status-label" class="mic-status-label" role="status" aria-live="assertive">
+        Tap Microphone to Speak
+      </div>
+      <div id="mic-timer" class="mic-timer">Tap to start (up to 30s)</div>
+
+      <!-- Real-time Web Audio API Waveform -->
+      <div style="width: 100%; max-width: 600px; margin-top: 1.75rem;">
+        <canvas id="voice-waveform" class="waveform-canvas" width="600" height="90" aria-label="Audio Waveform Visualization"></canvas>
+      </div>
+
+      <!-- Playback Control Bar -->
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+        <button id="stop-speech-btn" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.55rem 1.1rem;">
+          ⏹ Stop Speaking
+        </button>
+        <button id="repeat-speech-btn" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.55rem 1.1rem;" disabled>
+          🔁 Repeat Response
+        </button>
+      </div>
+    </div>
+
+    <!-- Real-time Recognized User Transcription Card -->
+    <div id="transcript-display-card" class="card" style="display: none; text-align: left; margin-bottom: 1.25rem; border-left: 4px solid var(--accent-cyan);">
+      <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-cyan); font-weight: 700;">
+        You Said (Gnani Prisma STT)
+      </span>
+      <p id="user-transcript-text" style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin-top: 0.5rem; line-height: 1.4;">
+        —
+      </p>
+    </div>
+
+    <!-- Assistant Spoken Response Card -->
+    <div id="response-display-card" class="card" style="display: none; text-align: left; border-left: 4px solid var(--primary-purple);">
+      <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-highlight); font-weight: 700;">
+        Swariva AI (Spoken via Gnani Timbre TTS)
+      </span>
+      <p id="assistant-response-text" style="font-size: 1.2rem; color: var(--text-primary); margin-top: 0.5rem; line-height: 1.5;">
+        —
+      </p>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/recorder.js"></script>
+  <script src="js/voice.js"></script>
+  <script>
+    // Keyboard accessibility: Press Spacebar to toggle microphone
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target === document.body) {
+        e.preventDefault();
+        const mic = document.getElementById('giant-mic-btn');
+        if (mic) mic.click();
+      }
+    });
+  </script>
+</body>
+</html>

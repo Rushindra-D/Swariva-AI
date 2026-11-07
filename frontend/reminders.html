@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWARIVA AI — Daily Reminders</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <header class="navbar" role="banner">
+    <a href="index.html" class="brand-container" aria-label="SWARIVA AI Home">
+      <div class="brand-logo-icon">🎙️</div>
+      <div class="brand-text-block">
+        <span class="brand-title">SWARIVA AI</span>
+        <span class="brand-tagline">Daily Reminders</span>
+      </div>
+    </a>
+
+    <nav aria-label="Main Navigation">
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="chat.html" class="nav-link">AI Chat</a></li>
+        <li><a href="voice.html" class="nav-link">Voice Assistant</a></li>
+        <li><a href="reminders.html" class="nav-link active">Reminders</a></li>
+        <li><a href="read_aloud.html" class="nav-link">Read Aloud</a></li>
+        <li><a href="history.html" class="nav-link">History</a></li>
+        <li><a href="settings.html" class="nav-link">Settings</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width: 900px; padding-top: 2rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div>
+        <h1 style="font-size: 2rem;">Daily Reminders & Medicine Tracker</h1>
+        <p style="margin-top: 0.25rem;">Stay on top of essential medications, health checkups, and routine tasks with spoken voice notifications.</p>
+      </div>
+    </div>
+
+    <!-- Add Reminder Card -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <h3 style="margin-bottom: 1.25rem;">+ Create a New Reminder</h3>
+      <form id="reminder-form">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <div>
+            <label for="reminder-title" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Reminder Title</label>
+            <input type="text" id="reminder-title" class="text-input" placeholder="e.g. Thyroid Medicine (1 tablet)" required>
+          </div>
+          <div>
+            <label for="reminder-time" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Scheduled Time</label>
+            <input type="time" id="reminder-time" class="text-input" required>
+          </div>
+          <div>
+            <label for="reminder-category" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Category</label>
+            <select id="reminder-category" class="select-input">
+              <option value="medicine">💊 Medicine / Pill</option>
+              <option value="appointment">🩺 Doctor Appointment</option>
+              <option value="routine">⏰ Daily Routine / Water</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <label for="reminder-notes" class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Voice Instructions & Notes (Optional)</label>
+          <input type="text" id="reminder-notes" class="text-input" placeholder="e.g. Drink full glass of warm water before breakfast.">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.75rem;">
+          <span>💾</span> Save Reminder
+        </button>
+      </form>
+    </div>
+
+    <!-- Reminders List -->
+    <div>
+      <h3 style="margin-bottom: 1rem;">Your Scheduled Reminders</h3>
+      <div id="reminder-list">
+        <!-- Rendered dynamically by reminders.js -->
+      </div>
+
+      <div id="reminders-empty-state" class="card" style="display: none; text-align: center; padding: 3rem 1.5rem;">
+        <span style="font-size: 3rem;">⏰</span>
+        <h4 style="margin-top: 0.75rem;">No Reminders Scheduled</h4>
+        <p style="margin-top: 0.35rem;">Use the form above or tell Swariva AI via voice to remind you of your medicine.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/reminders.js"></script>
+</body>
+</html>

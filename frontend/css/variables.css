@@ -1,0 +1,100 @@
+/* ==========================================================================
+   SWARIVA AI — Design Tokens & CSS Variables
+   Theme: Premium Dark with Cyber-Indigo & Royal-Purple Accents
+   ========================================================================== */
+
+:root {
+  /* Color Palette - Dark Premium */
+  --bg-primary: #0a0b10;
+  --bg-secondary: #121420;
+  --bg-tertiary: #1a1d2e;
+  --bg-card: rgba(26, 29, 46, 0.7);
+  --bg-card-hover: rgba(35, 39, 62, 0.85);
+  --bg-glass: rgba(18, 20, 32, 0.65);
+
+  /* Primary Brand Gradients & Accents */
+  --primary-purple: #8b5cf6;
+  --primary-indigo: #6366f1;
+  --accent-cyan: #38bdf8;
+  --accent-teal: #14b8a6;
+  --accent-pink: #ec4899;
+  
+  --gradient-brand: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #38bdf8 100%);
+  --gradient-glow: radial-gradient(circle at center, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
+  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+  --gradient-mic: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  --gradient-mic-active: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%);
+
+  /* Text Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-highlight: #c084fc;
+
+  /* Borders & Dividers */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-bright: rgba(139, 92, 246, 0.35);
+  --border-focus: #8b5cf6;
+
+  /* Status Colors */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-danger: #ef4444;
+  --status-info: #38bdf8;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.6;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 25px rgba(139, 92, 246, 0.35);
+  --shadow-mic: 0 0 35px rgba(124, 58, 237, 0.5);
+  --shadow-mic-active: 0 0 45px rgba(239, 68, 68, 0.7);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Accessibility: High Contrast Mode ── */
+body.high-contrast {
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #141414;
+  --bg-card: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #cbd5e1;
+  --border-subtle: #ffffff;
+  --border-bright: #ffff00;
+  --border-focus: #ffff00;
+  --primary-purple: #c084fc;
+}
+
+/* ── Accessibility: Dynamic Font Sizing ── */
+body.font-large {
+  --font-size-base: 18px;
+}
+body.font-xlarge {
+  --font-size-base: 20px;
+}

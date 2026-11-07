@@ -1,0 +1,118 @@
+/**
+ * SWARIVA AI — Frontend Configuration & State Management
+ * Centralized settings, endpoints, and local storage state.
+ */
+
+const CONFIG = {
+  // Configurable Backend API URL (defaults to local FastAPI backend)
+  API_BASE_URL: localStorage.getItem('swariva_api_url') || 'http://127.0.0.1:8000',
+
+  ENDPOINTS: {
+    HEALTH: '/health',
+    INFO: '/api/v1/info',
+    CHAT: '/api/v1/chat',
+    CHAT_CLEAR: '/api/v1/chat/clear',
+    CHAT_HISTORY: (sessionId) => `/api/v1/chat/history/${encodeURIComponent(sessionId)}`,
+    VOICE_CHAT: '/api/v1/voice/chat',
+    VOICE_SPEAK: '/api/v1/voice/speak',
+  },
+
+  STORAGE_KEYS: {
+    SESSION_ID: 'swariva_session_id',
+    LANGUAGE: 'swariva_preferred_language',
+    VOICE: 'swariva_preferred_voice',
+    HIGH_CONTRAST: 'swariva_high_contrast',
+    FONT_SIZE: 'swariva_font_size',
+    AUTO_PLAY: 'swariva_auto_play_voice',
+    REMINDERS: 'swariva_local_reminders',
+    RECENT_SESSIONS: 'swariva_recent_sessions',
+  },
+
+  DEFAULTS: {
+    LANGUAGE: 'auto',
+    VOICE: 'Nalini',
+    AUTO_PLAY: true,
+  },
+};
+
+/**
+ * Retrieve or generate active Session ID
+ */
+function getActiveSessionId() {
+  let sid = localStorage.getItem(CONFIG.STORAGE_KEYS.SESSION_ID);
+  if (!sid) {
+    sid = 'session_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+    localStorage.setItem(CONFIG.STORAGE_KEYS.SESSION_ID, sid);
+  }
+  return sid;
+}
+
+function setActiveSessionId(newId) {
+  if (newId) {
+    localStorage.setItem(CONFIG.STORAGE_KEYS.SESSION_ID, newId);
+  }
+}
+
+function resetActiveSessionId() {
+  const newId = 'session_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+  localStorage.setItem(CONFIG.STORAGE_KEYS.SESSION_ID, newId);
+  return newId;
+}
+
+function getStoredLanguage() {
+  return localStorage.getItem(CONFIG.STORAGE_KEYS.LANGUAGE) || CONFIG.DEFAULTS.LANGUAGE;
+}
+
+function setStoredLanguage(lang) {
+  localStorage.setItem(CONFIG.STORAGE_KEYS.LANGUAGE, lang);
+}
+
+/**
+ * Global accessible Toast notification
+ */
+function showToast(message, type = 'info', durationMs = 3500) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+
+  const icon = type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+  toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    setTimeout(() => toast.remove(), 300);
+  }, durationMs);
+}
+
+/**
+ * Apply saved Accessibility settings to DOM
+ */
+function applyAccessibilityPreferences() {
+  const isHighContrast = localStorage.getItem(CONFIG.STORAGE_KEYS.HIGH_CONTRAST) === 'true';
+  const fontSize = localStorage.getItem(CONFIG.STORAGE_KEYS.FONT_SIZE) || 'normal';
+
+  if (isHighContrast) {
+    document.body.classList.add('high-contrast');
+  } else {
+    document.body.classList.remove('high-contrast');
+  }
+
+  document.body.classList.remove('font-large', 'font-xlarge');
+  if (fontSize === 'large') document.body.classList.add('font-large');
+  if (fontSize === 'xlarge') document.body.classList.add('font-xlarge');
+}
+
+// Auto-run on DOM ready
+document.addEventListener('DOMContentLoaded', applyAccessibilityPreferences);

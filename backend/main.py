@@ -9,9 +9,11 @@ API Documentation: http://127.0.0.1:8000/docs
 import logging
 from contextlib import asynccontextmanager
 
+from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from config import (
     APP_ENV,
@@ -104,6 +106,7 @@ app.include_router(voice_router)
 async def root():
     return {
         "message": "Welcome to SWARIVA AI — A voice that understands you.",
+        "frontend_app": "/app/",
         "documentation": "/docs",
         "health_check": "/health",
         "api_endpoints": {
@@ -113,3 +116,12 @@ async def root():
             "system_info": "/api/v1/info",
         },
     }
+
+
+# ── Mount Frontend Static Web Application ──
+frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+if frontend_dir.exists():
+    app.mount("/app", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+    logger.info("Mounted frontend web app at /app/")
+
+
