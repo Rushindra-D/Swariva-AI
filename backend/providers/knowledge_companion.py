@@ -68,3 +68,4 @@ class KnowledgeCompanionProvider(BaseLLMProvider):
         elif "hi" in lang:
             return "नमस्ते! मैं स्वरिवा हूँ। आज आपसे बातचीत करके मुझे बहुत खुशी हो रही है।"
         return "Hello! I am Swariva. It is wonderful to speak with you today."
+

@@ -200,6 +200,71 @@ TECHNOLOGY_KNOWLEDGE = {
             "इसकी लिखावट सरल अंग्रेजी जैसी होती है, जिससे इसे सीखना और समझना बहुत आसान है।"
         )
     },
+    "cyclone": {
+        "english": (
+            "A cyclone is a large, rapidly rotating storm system characterized by a low-pressure center, strong winds, and heavy rainfall. "
+            "In the Northern Hemisphere, cyclones rotate counterclockwise, while in the Southern Hemisphere, they rotate clockwise. "
+            "Over warm tropical ocean waters, they can intensify into devastating storms."
+        ),
+        "telugu": (
+            "తుఫాను లేదా సైక్లోన్ అనేది అల్పపీడన కేంద్రం చుట్టూ అత్యంత వేగంగా తిరిగే బలమైన గాలుల వాయుగుండం. "
+            "ఇది తీవ్రమైన గాలులు మరియు భారీ వర్షపాతాన్ని కలిగిస్తుంది. ఉత్తరార్థగోళంలో తుఫానులు అపసవ్య దిశలో, "
+            "దక్షిణార్థగోళంలో సవ్య దిశలో తిరుగుతాయి. వెచ్చని సముద్ర జలాల మీదుగా ఇవి తీవ్ర రూపం దాల్చుతాయి."
+        ),
+        "hindi": (
+            "चक्रवात (Cyclone) एक विशाल और तीव्र गति से घूमने वाला तूफान तंत्र है, जिसके केंद्र में निम्न वायुमंडलीय दबाव होता है। "
+            "यह तेज हवाओं और भारी वर्षा का कारण बनता है। उत्तरी गोलार्ध में यह वामावर्त यानी घड़ी की उल्टी दिशा में और "
+            "दक्षिणी गोलार्ध में दक्षिणावर्त घूमता है। गर्म समुद्री जल के ऊपर यह अत्यधिक शक्तिशाली हो जाता है।"
+        )
+    },
+    "cyclone_causes": {
+        "english": (
+            "Cyclones are caused by warm ocean surface waters heating the air above them, creating an area of low atmospheric pressure. "
+            "As this warm, humid air rises rapidly, surrounding cooler air rushes in to replace it and begins swirling due to the Earth's rotation, "
+            "known as the Coriolis effect. The continuous condensation of water vapor releases tremendous thermal energy that powers the cyclone."
+        ),
+        "telugu": (
+            "సముద్ర ఉపరితల ఉష్ణోగ్రత 26.5 డిగ్రీల సెల్సియస్ కంటే ఎక్కువ వేడెక్కినప్పుడు తుఫానులు ఏర్పడతాయి. "
+            "వేడి గాలి పైకి లేచినప్పుడు అక్కడ తీవ్ర అల్పపీడనం ఏర్పడుతుంది. ఆ ఖాళీని భర్తీ చేయడానికి చల్లని గాలి వేగంగా దూసుకువచ్చి, "
+            "భూభ్రమణం వల్ల కలిగే కొరియోలిస్ ప్రభావంతో వృత్తాకారంలో తిరగడం ప్రారంభించడమే తుఫానులకు ప్రధాన కారణం."
+        ),
+        "hindi": (
+            "चक्रवात मुख्य रूप से समुद्र की सतह का तापमान 26.5°C से अधिक गर्म होने पर बनते हैं। "
+            "जब गर्म और नम हवा तेजी से ऊपर उठती है, तो सतह पर निम्न वायुमंडलीय दबाव का क्षेत्र बन जाता है। "
+            "खाली जगह को भरने के लिए ठंडी हवा तेजी से आती है और पृथ्वी के घूर्णन यानी कोरिओलिस प्रभाव के कारण घूमने लगती है, जिससे चक्रवात उत्पन्न होता है।"
+        )
+    },
+    "blockchain": {
+        "english": (
+            "Blockchain is a decentralized, distributed digital ledger technology that securely records transactions across a network of computers. "
+            "Data is stored in chronological blocks that are cryptographically linked together and immutable, meaning once recorded, they cannot be altered. "
+            "It is the foundational technology behind cryptocurrencies and secure transparent digital systems."
+        ),
+        "telugu": (
+            "బ్లాక్‌చెయిన్ అనేది ఒక వికేంద్రీకృత మరియు పంపిణీ చేయబడిన డిజిటల్ లెడ్జర్ సాంకేతికత. "
+            "ఇందులో సమాచారం కాలక్రమానుసారంగా బ్లాకుల రూపంలో భద్రపరచబడి, క్రిప్టోగ్రఫీ ద్వారా ఒకదానితో ఒకటి అనుసంధానించబడుతుంది. "
+            "ఒకసారి నమోదైన రికార్డులను ఎవరూ మార్చలేరు లేదా తొలగించలేరు. ఇది బిట్‌కాయిన్ వంటి క్రిప్టోకరెన్సీలకు పునాది."
+        ),
+        "hindi": (
+            "ब्लॉकचेन एक विकेंद्रीकृत (Decentralized) और वितरित डिजिटल बहीखाता है जो सुरक्षित रूप से डेटा और लेन-देन को रिकॉर्ड करता है। "
+            "डेटा को 'ब्लॉक' में संग्रहित किया जाता है और प्रत्येक ब्लॉक क्रिप्टोग्राफी के जरिए पिछले ब्लॉक से जुड़ा होता है। "
+            "इसे किसी एक व्यक्ति या संस्था द्वारा बदला नहीं जा सकता, जिससे यह अत्यधिक सुरक्षित और पारदर्शी बनता है।"
+        )
+    },
+    "photosynthesis": {
+        "english": (
+            "Photosynthesis is the vital biological process by which green plants, algae, and some bacteria synthesize nutrients from carbon dioxide and water using sunlight. "
+            "Chlorophyll in the plant leaves captures solar energy to produce glucose for nourishment, while releasing life-sustaining oxygen into the atmosphere."
+        ),
+        "telugu": (
+            "కిరణజన్య సంయోగక్రియ అనేది ఆకుపచ్చని మొక్కలు సూర్యరశ్మిని ఉపయోగించి తమ ఆహారాన్ని తామే తయారు చేసుకునే ప్రాథమిక జీవక్రియ. "
+            "ఆకులలోని క్లోరోఫిల్ సూర్యకాంతిని గ్రహించి, నీరు మరియు కార్బన్ డయాక్సైడ్‌ల సాయంతో గ్లూకోజ్‌ను తయారు చేస్తుంది, మరియు సమస్త జీవుల మనుగడకు అవసరమైన ఆక్సిజన్‌ను గాల్లోకి విడుదల చేస్తుంది."
+        ),
+        "hindi": (
+            "प्रकाश संश्लेषण (Photosynthesis) वह महत्वपूर्ण जैविक प्रक्रिया है जिसके द्वारा हरे पौधे सूर्य के प्रकाश की उपस्थिति में जल और कार्बन डाइऑक्साइड से भोजन तैयार करते हैं। "
+            "पत्तियों में मौजूद क्लोरोफिल सौर ऊर्जा को अवशोषित करता है, जिससे पौधे ग्लूकोज बनाते हैं और वायुमंडल में ऑक्सीजन गैस छोड़ते हैं जो सभी जीवों के लिए अनिवार्य है।"
+        )
+    },
     "internet_computers": {
         "english": (
             "The internet is a vast global network connecting billions of computers, phones, and devices worldwide. "
@@ -358,20 +423,30 @@ class KnowledgeCompanionEngine:
             if "cloud" in query or "క్లౌడ్" in query or "क्लाउड" in query:
                 return TECHNOLOGY_KNOWLEDGE["cloud_computing"][target_lang]
 
-            # Thoughtful spoken educational response without echoing
+            # Direct answers for common concepts
+            if "cyclone" in query or "తుఫాను" in query or "तूफान" in query:
+                if any(w in query for w in ["cause", "causes", "ఎందుకు", "ఎలా ఏర్పడుతుంది", "क्यों", "कारण"]):
+                    return TECHNOLOGY_KNOWLEDGE["cyclone_causes"][target_lang]
+                return TECHNOLOGY_KNOWLEDGE["cyclone"][target_lang]
+            if "blockchain" in query or "బ్లాక్‌చెయిన్" in query or "ब्लॉकचेन" in query:
+                return TECHNOLOGY_KNOWLEDGE["blockchain"][target_lang]
+            if "photosynthesis" in query or "కిరణజన్య" in query or "प्रकाश संश्लेषण" in query:
+                return TECHNOLOGY_KNOWLEDGE["photosynthesis"][target_lang]
+
+            # Clear, non-generic diagnostic when external reasoning model is not reached
             if target_lang == "telugu":
                 return (
-                    "ఇది చాలా మంచి ప్రశ్న. ఈ అంశం గురించి మీకు మరింత వివరణ ఇవ్వడానికి నేను సిద్ధంగా ఉన్నాను. "
-                    "మీరు ప్రత్యేకంగా ఏ వివరణ లేదా ఉదాహరణ తెలుసుకోవాలనుకుంటున్నారో అడగండి."
+                    "ఈ ప్రశ్నకు లోతైన వివరణ అందించడానికి జ్ఞాని ఎవోన్ (Gnani Evon) రీజనింగ్ మోడల్ అందుబాటులో లేదు. "
+                    "దయచేసి ఎవోన్ ఎండ్‌పాయింట్‌ను .env లో కాన్ఫిగర్ చేయండి."
                 )
             elif target_lang == "hindi":
                 return (
-                    "यह एक बहुत ही विचारणीय प्रश्न है। इस विषय पर आपको और अधिक स्पष्टता देने के लिए मैं तैयार हूँ। "
-                    "कृपया बताएँ कि आप इसके किस पहलू या उदाहरण को विस्तार से जानना चाहते हैं।"
+                    "इस प्रश्न का विस्तृत उत्तर देने के लिए ज्ञानी इवोन (Gnani Evon) रीजनिंग मॉडल उपलब्ध नहीं है। "
+                    "कृपया .env में इवोन एंडपॉइंट कॉन्फ़िगर करें।"
                 )
             return (
-                "That is an insightful question. I am ready to delve into this concept with you. "
-                "Feel free to ask for a specific aspect, everyday example, or step-by-step breakdown."
+                "I am currently unable to reach the Gnani Evon reasoning model to answer this question. "
+                "Please configure an active EVON_BASE_URL in your .env to enable full generative reasoning."
             )
 
         # ── 5. ACCESSIBILITY ──

@@ -19,3 +19,4 @@ __all__ = [
     "ToolRegistry",
     "tool_registry",
 ]
+

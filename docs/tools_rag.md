@@ -57,3 +57,4 @@ class ToolResult:
 2. If matched, the tool executes and produces a verified multilingual `ToolResult`.
 3. If using an external LLM (Evon or Groq), the verified data is injected into the prompt as `VERIFIED REAL-TIME DATA (GROUND TRUTH)`.
 4. If using the offline `KnowledgeCompanionProvider`, the tool's verified spoken text is returned directly, ensuring **zero latency** and **100% factual accuracy**.
+

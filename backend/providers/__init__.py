@@ -30,9 +30,9 @@ def get_llm_provider() -> Tuple[BaseLLMProvider, BaseLLMProvider]:
     """
     fallback_provider = KnowledgeCompanionProvider()
 
-    # Tier 1: Check if Evon is explicitly pointed to an active hosted/cloud endpoint
-    evon_url = os.getenv("EVON_BASE_URL", EVON_BASE_URL)
-    evon_key = os.getenv("GNANI_EVON_API_KEY", GNANI_EVON_API_KEY)
+    # Tier 1: Check if Evon is explicitly pointed to an active hosted/cloud endpoint (e.g. Hugging Face Inference Endpoint or vLLM)
+    evon_url = os.getenv("HF_ENDPOINT_URL") or os.getenv("EVON_BASE_URL", EVON_BASE_URL)
+    evon_key = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY") or os.getenv("GNANI_EVON_API_KEY", GNANI_EVON_API_KEY)
     enable_evon = os.getenv("ENABLE_EVON", "false").lower() in ("true", "1", "yes")
 
     if enable_evon or (evon_url and "localhost" not in evon_url and "127.0.0.1" not in evon_url):
@@ -71,3 +71,4 @@ __all__ = [
     "GroqLLMProvider",
     "get_llm_provider",
 ]
+

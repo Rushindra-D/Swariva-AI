@@ -54,7 +54,8 @@ TELUGU_WORDS = {
     "సహాయం", "బాగున్నారా", "నమస్కారం", "తెలుపండి", "ఏమిటి", "స్వరివ",
     # Transliterated / code-mixed Tenglish markers
     "gurinchi", "cheppandi", "cheppu", "vivarinchandi", "panduga", "pandaga",
-    "eppudu", "enduku", "ela", "mandulu", "sahayam", "bagunnara", "telusuko"
+    "eppudu", "enduku", "ela", "mandulu", "sahayam", "bagunnara", "telusuko",
+    "ante", "enti", "emiti", "cheyandi", "chesuko"
 }
 
 HINDI_WORDS = {
@@ -62,7 +63,7 @@ HINDI_WORDS = {
     "मदद", "नमस्ते", "कैसा", "स्वरिवा",
     # Transliterated / code-mixed Hinglish markers
     "baare", "mein", "batao", "samjhao", "kya", "kab", "kyun", "tyohar", "dawa",
-    "madad", "kaisa", "karo", "chahiye"
+    "madad", "kaisa", "karo", "chahiye", "hota", "hai", "kise"
 }
 
 
@@ -232,6 +233,26 @@ class IntentClassifier:
             ],
             "machine_learning": [
                 "machine learning", "ml", "మెషిన్ లెర్నింగ్", "मशीन लर्निंग"
+            ],
+            "cyclone_causes": [
+                "what causes cyclone", "causes of cyclone", "how cyclones form", "cause of cyclone", "causes cyclones",
+                "తుఫానులు ఎందుకు వస్తాయి", "తుఫాను ఎలా ఏర్పడుతుంది", "చక్రవాతం ఎందుకు",
+                "चक्रवात क्यों आते हैं", "चक्रवात कैसे बनता है", "चक्रवात का कारण"
+            ],
+            "cyclone": [
+                "cyclone", "tropical storm", "hurricane", "typhoon",
+                "తుఫాను", "వాయుగుండం", "చక్రవాతం",
+                "चक्रवात", "तूफान"
+            ],
+            "blockchain": [
+                "blockchain", "block chain", "distributed ledger",
+                "బ్లాక్‌చెయిన్", "బ్లాక్ చెయిన్",
+                "ब्लॉकचेन", "ब्लॉक चेन"
+            ],
+            "photosynthesis": [
+                "photosynthesis", "photo synthesis",
+                "కిరణజన్య సంయోగక్రియ", "కిరణజన్య సంయోగ క్రియ",
+                "प्रकाश संश्लेषण"
             ],
             "cloud_computing": [
                 "cloud computing", "cloud storage", "క్లౌడ్ కంప్యూటింగ్", "क्लाउड कंप्यूटिंग"

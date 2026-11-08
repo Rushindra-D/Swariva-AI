@@ -108,3 +108,4 @@ SWARIVA AI operates with a resilient **Dual-Engine Persistence Layer**:
 4. `public.reminders`: Daily routines, medicine schedules, status tracking.
 5. `public.trusted_contacts`: Emergency contacts for accessibility features.
 6. `public.user_settings`: User accessibility preferences and dark mode toggles.
+

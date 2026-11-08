@@ -42,3 +42,4 @@ class BaseTool(ABC):
     async def execute(self, query: str, context: Optional[Dict[str, Any]] = None) -> ToolResult:
         """Executes the tool and returns structured result with spoken summaries."""
         pass
+

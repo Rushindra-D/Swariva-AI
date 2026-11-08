@@ -100,3 +100,4 @@ class GoldPriceTool(BaseTool):
             },
             source=source,
         )
+

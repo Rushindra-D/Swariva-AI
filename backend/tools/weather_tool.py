@@ -144,3 +144,4 @@ class WeatherTool(BaseTool):
                 source="Fallback Weather Cache",
                 error=str(e),
             )
+

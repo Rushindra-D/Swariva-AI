@@ -53,3 +53,4 @@ class ToolRegistry:
 
 # Global singleton instance
 tool_registry = ToolRegistry()
+
