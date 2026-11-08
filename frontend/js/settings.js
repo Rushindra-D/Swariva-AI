@@ -14,6 +14,40 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveBtn = document.getElementById('save-settings-btn');
   const resetBtn = document.getElementById('reset-data-btn');
 
+  const nameSpan = document.getElementById('account-display-name');
+  const emailSpan = document.getElementById('account-display-email');
+  const actionsDiv = document.getElementById('account-actions');
+
+  // Check login status
+  async function checkUserAccount() {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      const profile = await SwarivaAPI.auth.me();
+      if (profile && nameSpan && emailSpan && actionsDiv) {
+        nameSpan.textContent = profile.full_name || 'Authenticated User';
+        emailSpan.textContent = `${profile.email} • Synced with Supabase`;
+
+        actionsDiv.innerHTML = `
+          <button id="btn-account-logout" class="btn btn-secondary" style="padding: 0.5rem 1.2rem; font-size: 0.9rem;">
+            Sign Out
+          </button>
+        `;
+
+        document.getElementById('btn-account-logout').addEventListener('click', async () => {
+          await SwarivaAPI.auth.logout();
+          showToast('Signed out successfully.', 'info');
+          setTimeout(() => window.location.reload(), 600);
+        });
+      }
+    } catch (e) {
+      console.warn('Account status check failed:', e);
+    }
+  }
+
+  checkUserAccount();
+
   // Load current values
   if (langSelect) langSelect.value = getStoredLanguage();
   if (voiceSelect) voiceSelect.value = localStorage.getItem(CONFIG.STORAGE_KEYS.VOICE) || 'Nalini';
@@ -90,3 +124,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+

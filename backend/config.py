@@ -44,7 +44,9 @@ TTS_VOICES = {
 
 # ── Supabase Configuration (Phase 5) ──
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+SUPABASE_SECRET_KEY: str = os.getenv("SUPABASE_SECRET_KEY", "") or os.getenv("SUPABASE_KEY", "")
+SUPABASE_PUBLISHABLE_KEY: str = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+SUPABASE_KEY: str = SUPABASE_SECRET_KEY
 
 # ── Application Configuration ──
 APP_ENV: str = os.getenv("APP_ENV", "development")
@@ -57,7 +59,7 @@ def validate_config() -> list[str]:
     warnings = []
     if not GNANI_API_KEY or GNANI_API_KEY.startswith("placeholder"):
         warnings.append("GNANI_API_KEY is not set. Gnani API calls will fail.")
-    if not SUPABASE_URL or SUPABASE_URL.startswith("placeholder"):
-        warnings.append("SUPABASE_URL is not set. Database features will be unavailable.")
+    if not SUPABASE_URL or "your-project-id" in SUPABASE_URL or SUPABASE_URL.startswith("placeholder"):
+        warnings.append("SUPABASE_URL is not set to a live project URL. Operating in fallback mode.")
     return warnings
 

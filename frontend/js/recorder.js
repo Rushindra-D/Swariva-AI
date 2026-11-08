@@ -121,3 +121,4 @@ class VoiceRecorder {
 
 // Global recorder instance
 const voiceRecorder = new VoiceRecorder();
+

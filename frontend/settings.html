@@ -42,6 +42,20 @@
       <p style="margin-top: 0.25rem;">Customize your voice preferences, display accessibility, and backend connectivity.</p>
     </div>
 
+    <!-- Section 0: User Profile & Supabase Auth -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h3 style="margin-bottom: 1.25rem;">👤 Account & Supabase Cloud Sync</h3>
+      <div id="account-status-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span id="account-display-name" style="font-weight: 700; font-size: 1.05rem; display: block;">Guest User</span>
+          <span id="account-display-email" style="font-size: 0.85rem; color: var(--text-muted);">Not signed in. Conversations stored locally.</span>
+        </div>
+        <div id="account-actions">
+          <a href="auth.html" id="btn-account-auth" class="btn btn-primary" style="padding: 0.5rem 1.2rem; font-size: 0.9rem;">Sign In / Register</a>
+        </div>
+      </div>
+    </div>
+
     <!-- Section 1: Accessibility Options -->
     <div class="card" style="margin-bottom: 1.5rem;">
       <h3 style="margin-bottom: 1.25rem;">👁️ Accessibility & Display</h3>
@@ -138,3 +152,4 @@
   <script src="js/settings.js"></script>
 </body>
 </html>
+

@@ -292,3 +292,4 @@ document.addEventListener('DOMContentLoaded', () => {
     'Hello! I am Swariva, your intelligent voice assistant. You can speak to me or type your questions in English, Telugu, or Hindi.'
   );
 });
+

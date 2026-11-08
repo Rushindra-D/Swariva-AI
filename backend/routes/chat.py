@@ -3,8 +3,9 @@ SWARIVA AI — Text Chat Routes
 Handles text queries, multi-turn session continuity, and history management.
 """
 import base64
+from typing import Optional, Dict, Any
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
 from schemas.chat import (
     ChatRequest,
@@ -15,6 +16,7 @@ from schemas.chat import (
 from conversation import conversation_manager
 from agent import agent
 from gnani_tts import GnaniTTS
+from auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/chat", tags=["Text Chat"])
 
@@ -23,7 +25,10 @@ tts_client = GnaniTTS()
 
 
 @router.post("", response_model=ChatResponse, summary="Send a text message")
-async def send_chat_message(req: ChatRequest):
+async def send_chat_message(
+    req: ChatRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
+):
     """
     Main text chat endpoint:
     - Maintains conversation context across multiple turns using session_id
@@ -31,10 +36,13 @@ async def send_chat_message(req: ChatRequest):
     - Optionally generates Timbre TTS audio for the response if include_audio=True
     """
     try:
+        user_id = current_user["id"] if current_user else None
+
         # Retrieve or initialize session
         session = conversation_manager.get_or_create(
             session_id=req.session_id,
             preferred_language=req.language or "auto",
+            user_id=user_id,
         )
 
         # Generate intelligent response

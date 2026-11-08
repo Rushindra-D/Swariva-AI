@@ -15,9 +15,17 @@ const CONFIG = {
     CHAT_HISTORY: (sessionId) => `/api/v1/chat/history/${encodeURIComponent(sessionId)}`,
     VOICE_CHAT: '/api/v1/voice/chat',
     VOICE_SPEAK: '/api/v1/voice/speak',
+    AUTH_SIGNUP: '/api/v1/auth/signup',
+    AUTH_LOGIN: '/api/v1/auth/login',
+    AUTH_ME: '/api/v1/auth/me',
+    AUTH_LOGOUT: '/api/v1/auth/logout',
+    REMINDERS: '/api/v1/reminders',
+    CONVERSATIONS: '/api/v1/conversations',
   },
 
   STORAGE_KEYS: {
+    AUTH_TOKEN: 'swariva_auth_token',
+    USER_PROFILE: 'swariva_user_profile',
     SESSION_ID: 'swariva_session_id',
     LANGUAGE: 'swariva_preferred_language',
     VOICE: 'swariva_preferred_voice',
@@ -65,6 +73,40 @@ function getStoredLanguage() {
 
 function setStoredLanguage(lang) {
   localStorage.setItem(CONFIG.STORAGE_KEYS.LANGUAGE, lang);
+}
+
+function getAuthToken() {
+  return localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+}
+
+function setAuthToken(token) {
+  if (token) {
+    localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, token);
+  } else {
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+  }
+}
+
+function getUserProfile() {
+  try {
+    const raw = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setUserProfile(profile) {
+  if (profile) {
+    localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+  } else {
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_PROFILE);
+  }
+}
+
+function clearAuth() {
+  localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+  localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_PROFILE);
 }
 
 /**
@@ -116,3 +158,4 @@ function applyAccessibilityPreferences() {
 
 // Auto-run on DOM ready
 document.addEventListener('DOMContentLoaded', applyAccessibilityPreferences);
+

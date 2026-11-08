@@ -28,6 +28,10 @@ desktop.ini
 backend/test_audio/*.wav
 *.wav
 
+# SQLite Local Database
+*.db
+database/*.db
+
 # Node (if used later)
 node_modules/
 

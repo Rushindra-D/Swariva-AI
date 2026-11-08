@@ -5,9 +5,9 @@ and Standalone Read-Aloud (Text-to-Speech).
 """
 import base64
 import time
-from typing import Optional
+from typing import Optional, Dict, Any
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Depends
 
 from schemas.voice import (
     VoiceChatResponse,
@@ -18,6 +18,7 @@ from conversation import conversation_manager
 from agent import agent
 from gnani_stt import GnaniSTT
 from gnani_tts import GnaniTTS
+from auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/voice", tags=["Voice Assistant"])
 
@@ -35,6 +36,7 @@ async def voice_chat_endpoint(
     session_id: Optional[str] = Form(None, description="Active session ID for conversation continuity"),
     language: Optional[str] = Form("auto", description="Spoken language ('english', 'hindi', 'telugu', or 'auto')"),
     voice: Optional[str] = Form(None, description="Voice name for synthesized reply"),
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
 ):
     """
     End-to-End Voice Interaction:
@@ -44,6 +46,7 @@ async def voice_chat_endpoint(
     4. Synthesizes the response into human voice using Gnani Timbre TTS (v2.5).
     5. Returns transcript, text response, and base64 audio in a single cohesive payload.
     """
+    user_id = current_user["id"] if current_user else None
     # 1. Validate audio file
     filename = audio_file.filename or "recording.wav"
     suffix = Path(filename).suffix.lower()
@@ -105,6 +108,7 @@ async def voice_chat_endpoint(
     session = conversation_manager.get_or_create(
         session_id=session_id,
         preferred_language=stt_result.detected_language,
+        user_id=user_id,
     )
 
     reply = await agent.generate_response(

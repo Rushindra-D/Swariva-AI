@@ -22,7 +22,14 @@ from config import (
     GNANI_TTS_MODEL,
     validate_config,
 )
-from routes import health_router, chat_router, voice_router
+from routes import (
+    health_router,
+    chat_router,
+    voice_router,
+    auth_router,
+    reminders_router,
+    conversations_router,
+)
 
 # Configure centralized logging
 logging.basicConfig(
@@ -99,6 +106,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health_router)
 app.include_router(chat_router)
 app.include_router(voice_router)
+app.include_router(auth_router)
+app.include_router(reminders_router)
+app.include_router(conversations_router)
 
 
 # Root welcome endpoint
@@ -113,6 +123,9 @@ async def root():
             "text_chat": "/api/v1/chat",
             "voice_chat": "/api/v1/voice/chat",
             "read_aloud": "/api/v1/voice/speak",
+            "auth": "/api/v1/auth",
+            "reminders": "/api/v1/reminders",
+            "conversations": "/api/v1/conversations",
             "system_info": "/api/v1/info",
         },
     }

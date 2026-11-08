@@ -1,7 +1,8 @@
 /**
  * SWARIVA AI — Daily Reminders & Medicine Assistant
  * Manages daily routine, medicine, and appointment reminders.
- * Supports spoken audio reminders via Gnani Timbre.
+ * Synchronizes with Supabase / SQLite backend with offline fallback.
+ * Supports spoken audio announcements via Gnani Timbre.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,57 +14,53 @@ document.addEventListener('DOMContentLoaded', () => {
   const reminderList = document.getElementById('reminder-list');
   const emptyState = document.getElementById('reminders-empty-state');
 
-  // Load reminders from localStorage
-  function getReminders() {
-    const raw = localStorage.getItem(CONFIG.STORAGE_KEYS.REMINDERS);
-    if (!raw) {
-      // Default sample reminders
-      const defaults = [
-        {
-          id: 'rem_1',
-          title: 'Blood Pressure Medicine',
-          time: '08:00',
-          category: 'medicine',
-          notes: 'Take 1 tablet with water after breakfast.',
-          completed: false,
-        },
-        {
-          id: 'rem_2',
-          title: 'Evening Walk & Hydration',
-          time: '17:30',
-          category: 'routine',
-          notes: 'Gentle 20-minute walk in the garden.',
-          completed: false,
-        },
-      ];
-      localStorage.setItem(CONFIG.STORAGE_KEYS.REMINDERS, JSON.stringify(defaults));
-      return defaults;
-    }
+  let currentReminders = [];
+
+  // Helper to load reminders from localStorage fallback
+  function getLocalReminders() {
     try {
-      return JSON.parse(raw);
+      const raw = localStorage.getItem(CONFIG.STORAGE_KEYS.REMINDERS);
+      return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
     }
   }
 
-  function saveReminders(items) {
+  function saveLocalReminders(items) {
     localStorage.setItem(CONFIG.STORAGE_KEYS.REMINDERS, JSON.stringify(items));
+  }
+
+  // Fetch reminders from backend API, fallback to localStorage
+  async function loadReminders() {
+    try {
+      const items = await SwarivaAPI.reminders.list();
+      currentReminders = items.map(it => ({
+        id: it.id,
+        title: it.title,
+        time: it.reminder_datetime.includes('T') ? it.reminder_datetime.split('T')[1].substring(0, 5) : it.reminder_datetime,
+        category: (it.title.toLowerCase().includes('medicine') || it.title.toLowerCase().includes('tablet') || it.title.toLowerCase().includes('pill')) ? 'medicine' : 'routine',
+        notes: it.description || '',
+        completed: Boolean(it.is_completed),
+      }));
+      saveLocalReminders(currentReminders);
+    } catch (err) {
+      console.warn('Backend reminders fetch failed, loading local storage:', err);
+      currentReminders = getLocalReminders();
+    }
     renderReminders();
   }
 
   function renderReminders() {
-    const items = getReminders();
     if (!reminderList) return;
-
     reminderList.innerHTML = '';
 
-    if (items.length === 0) {
+    if (currentReminders.length === 0) {
       if (emptyState) emptyState.style.display = 'block';
       return;
     }
     if (emptyState) emptyState.style.display = 'none';
 
-    items.forEach((item) => {
+    currentReminders.forEach((item) => {
       const card = document.createElement('div');
       card.className = `card reminder-card ${item.completed ? 'completed' : ''}`;
       card.style.display = 'flex';
@@ -117,9 +114,16 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleBtn.style.padding = '0.45rem 0.8rem';
       toggleBtn.style.fontSize = '0.85rem';
       toggleBtn.textContent = item.completed ? 'Undo' : 'Done';
-      toggleBtn.onclick = () => {
-        item.completed = !item.completed;
-        saveReminders(items);
+      toggleBtn.onclick = async () => {
+        const nextState = !item.completed;
+        item.completed = nextState;
+        renderReminders();
+        try {
+          await SwarivaAPI.reminders.update(item.id, { is_completed: nextState });
+        } catch (err) {
+          console.warn('Backend update failed:', err);
+        }
+        saveLocalReminders(currentReminders);
       };
 
       // Delete Button
@@ -129,9 +133,15 @@ document.addEventListener('DOMContentLoaded', () => {
       delBtn.style.fontSize = '0.85rem';
       delBtn.textContent = '✕';
       delBtn.title = 'Delete reminder';
-      delBtn.onclick = () => {
-        const filtered = items.filter((r) => r.id !== item.id);
-        saveReminders(filtered);
+      delBtn.onclick = async () => {
+        currentReminders = currentReminders.filter((r) => r.id !== item.id);
+        renderReminders();
+        saveLocalReminders(currentReminders);
+        try {
+          await SwarivaAPI.reminders.delete(item.id);
+        } catch (err) {
+          console.warn('Backend delete failed:', err);
+        }
         showToast('Reminder deleted', 'info');
       };
 
@@ -146,27 +156,52 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (reminderForm) {
-    reminderForm.addEventListener('submit', (e) => {
+    reminderForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = titleInput.value.trim();
       const time = timeInput.value.trim();
+      const category = categorySelect ? categorySelect.value : 'routine';
+      const notes = notesInput ? notesInput.value.trim() : '';
+
       if (!title || !time) {
         showToast('Please fill in title and time.', 'error');
         return;
       }
 
-      const newReminder = {
-        id: 'rem_' + Date.now(),
-        title,
-        time,
-        category: categorySelect ? categorySelect.value : 'routine',
-        notes: notesInput ? notesInput.value.trim() : '',
-        completed: false,
-      };
+      // Compose ISO datetime format
+      const today = new Date().toISOString().split('T')[0];
+      const reminderDatetime = `${today}T${time}:00`;
 
-      const items = getReminders();
-      items.push(newReminder);
-      saveReminders(items);
+      try {
+        const created = await SwarivaAPI.reminders.create({
+          title,
+          reminder_datetime: reminderDatetime,
+          description: notes,
+          language: getStoredLanguage(),
+        });
+
+        currentReminders.unshift({
+          id: created.id,
+          title: created.title,
+          time,
+          category,
+          notes,
+          completed: false,
+        });
+      } catch (err) {
+        console.warn('Backend reminder creation failed, using local ID:', err);
+        currentReminders.unshift({
+          id: 'rem_' + Date.now(),
+          title,
+          time,
+          category,
+          notes,
+          completed: false,
+        });
+      }
+
+      saveLocalReminders(currentReminders);
+      renderReminders();
 
       titleInput.value = '';
       timeInput.value = '';
@@ -176,5 +211,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  renderReminders();
+  loadReminders();
 });
