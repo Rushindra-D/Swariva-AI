@@ -234,7 +234,16 @@ class SWARIVAAgent:
                 )
                 provider_used = "knowledge_companion_fallback"
 
-        # 8. Apply safety echo filter
+        # 8. Dynamic search fallback for arbitrary questions if reasoning model is unreachable
+        if "unable to reach the gnani evon" in reply_text.lower() or "రీజనింగ్ మోడల్ అందుబాటులో లేదు" in reply_text:
+            from tools.search_tool import SearchTool
+            search_fallback = SearchTool()
+            search_res = await search_fallback.execute(user_message)
+            if search_res and search_res.success:
+                reply_text = search_res.get_spoken_text(resolved_lang)
+                provider_used = "rag_search_reference"
+
+        # 9. Apply safety echo filter
         reply_text = filter_echo_prefixes(reply_text, user_message)
 
         # 9. Prevent exact consecutive duplicate response

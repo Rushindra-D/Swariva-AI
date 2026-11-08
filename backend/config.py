@@ -28,10 +28,11 @@ GNANI_TTS_ENDPOINT: str = f"{GNANI_BASE_URL}/api/v1/tts/inference"
 GNANI_STT_MODEL: str = "prisma-v3.0"
 GNANI_TTS_MODEL: str = "timbre-v2.5"  # v2.5 has wider voice catalog; v3.0 for expressive tags
 
-# ── Gnani Evon v3.3 Reasoning Model Configuration ──
-EVON_BASE_URL: str = os.getenv("EVON_BASE_URL", "http://localhost:30000/v1")
+# ── Gnani Evon v3.3 Reasoning Model Configuration (Hugging Face / OpenAI Compatible) ──
+EVON_BASE_URL: str = os.getenv("EVON_BASE_URL", "https://router.huggingface.co/hf-inference/v1")
 EVON_MODEL: str = os.getenv("EVON_MODEL", "gnani/gnani-evon-v3.3-30B-A3B")
 EVON_TIMEOUT_SECONDS: float = float(os.getenv("EVON_TIMEOUT_SECONDS", "30.0"))
+HF_TOKEN: str = os.getenv("HF_TOKEN", "") or os.getenv("HUGGINGFACE_API_KEY", "")
 
 # ── Supported Languages ──
 SUPPORTED_LANGUAGES = {
