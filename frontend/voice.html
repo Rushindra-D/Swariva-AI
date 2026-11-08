@@ -49,8 +49,8 @@
       <span>Accessible Voice Mode: Tap the microphone or press <strong>Spacebar</strong> to speak.</span>
     </div>
 
-    <!-- Language & Voice Config Bar -->
-    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+    <!-- Language, Voice & VAD Controls Bar -->
+    <div style="display: flex; justify-content: center; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 1.75rem;">
       <div style="display: flex; align-items: center; gap: 0.5rem;">
         <label for="voice-page-lang" style="font-size: 0.88rem; font-weight: 600;">Language:</label>
         <select id="voice-page-lang" class="select-input" style="width: auto; padding: 0.4rem 0.8rem;">
@@ -62,12 +62,30 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <label for="voice-page-voice" style="font-size: 0.88rem; font-weight: 600;">Timbre Voice:</label>
+        <label for="voice-page-voice" style="font-size: 0.88rem; font-weight: 600;">Voice:</label>
         <select id="voice-page-voice" class="select-input" style="width: auto; padding: 0.4rem 0.8rem;">
           <option value="Nalini">Nalini (Female)</option>
           <option value="Kaveri">Kaveri (Female, Bright)</option>
           <option value="Deepak">Deepak (Male)</option>
         </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <label for="silence-timeout-select" style="font-size: 0.88rem; font-weight: 600;">Silence Pause:</label>
+        <select id="silence-timeout-select" class="select-input" style="width: auto; padding: 0.4rem 0.8rem;" title="Automatic silence duration before finalizing recording">
+          <option value="1000">1.0s (Fast)</option>
+          <option value="1500">1.5s</option>
+          <option value="2000" selected>2.0s (Natural)</option>
+          <option value="2500">2.5s</option>
+          <option value="3000">3.0s (Relaxed)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        <input type="checkbox" id="continuous-mode-toggle" style="width: 1.1rem; height: 1.1rem; accent-color: var(--primary-purple); cursor: pointer;">
+        <label for="continuous-mode-toggle" style="font-size: 0.88rem; font-weight: 600; cursor: pointer; user-select: none;">
+          🔁 Continuous Mode
+        </label>
       </div>
     </div>
 
@@ -85,17 +103,24 @@
       <div id="mic-status-label" class="mic-status-label" role="status" aria-live="assertive">
         Tap Microphone to Speak
       </div>
-      <div id="mic-timer" class="mic-timer">Tap to start (up to 30s)</div>
+      <div id="mic-timer" class="mic-timer">Speak naturally • Swariva responds automatically when you finish</div>
 
       <!-- Real-time Web Audio API Waveform -->
-      <div style="width: 100%; max-width: 600px; margin-top: 1.75rem;">
+      <div style="width: 100%; max-width: 600px; margin-top: 1.5rem;">
         <canvas id="voice-waveform" class="waveform-canvas" width="600" height="90" aria-label="Audio Waveform Visualization"></canvas>
       </div>
 
+      <p style="font-size: 0.84rem; color: var(--text-secondary); margin-top: 0.75rem; margin-bottom: 0;">
+        ✨ <em>Voice Activity Detection active: automatically recognizes ~2s of silence and responds immediately.</em>
+      </p>
+
       <!-- Playback Control Bar -->
-      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap; justify-content: center;">
+        <button id="cancel-recording-btn" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.55rem 1.1rem; display: none;">
+          ❌ Cancel
+        </button>
         <button id="stop-speech-btn" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.55rem 1.1rem;">
-          ⏹ Stop Speaking
+          ⏹ Stop / Pause
         </button>
         <button id="repeat-speech-btn" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.55rem 1.1rem;" disabled>
           🔁 Repeat Response
