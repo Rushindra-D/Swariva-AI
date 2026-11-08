@@ -91,8 +91,7 @@ async def test_api_connection():
         print("   → Open .env and set your real API key.")
         return False
 
-    masked = GNANI_API_KEY[:8] + "..." + GNANI_API_KEY[-8:]
-    print(f"✅ API key loaded: {masked}")
+    print("✅ API key loaded: [CONFIGURED SECURELY]")
 
     try:
         stt = GnaniSTT()

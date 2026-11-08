@@ -45,8 +45,7 @@ async def test_api_connection():
         print("❌ FAIL: GNANI_API_KEY is not set in .env")
         return False
 
-    masked = GNANI_API_KEY[:8] + "..." + GNANI_API_KEY[-8:]
-    print(f"✅ API key loaded: {masked}")
+    print("✅ API key loaded: [CONFIGURED SECURELY]")
 
     try:
         tts = GnaniTTS()

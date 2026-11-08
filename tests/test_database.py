@@ -231,7 +231,7 @@ def test_conversation_tenant_isolation():
     tokenB = uB["access_token"]
     headersB = {"Authorization": f"Bearer {tokenB}"}
 
-    sessionA = f"userA_private_{uuid.uuid4().hex[:8]}"
+    sessionA = str(uuid.uuid4())
 
     # User A sends a private message
     client.post(

@@ -18,6 +18,16 @@ from database import (
 logger = logging.getLogger("swariva.repo.conversation")
 
 
+def _ensure_valid_uuid(val: Optional[str]) -> str:
+    """Ensures conversation ID is a valid PostgreSQL UUID, converting custom strings deterministically."""
+    if not val:
+        return str(uuid.uuid4())
+    try:
+        return str(uuid.UUID(str(val)))
+    except (ValueError, AttributeError):
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(val)))
+
+
 class ConversationRepository:
     """Manages persistent conversations and dialogue messages with tenant isolation."""
 
@@ -29,11 +39,11 @@ class ConversationRepository:
         language: str = "auto",
     ) -> Dict[str, Any]:
         """Fetches an existing conversation or inserts a new record."""
-        cid = conversation_id or str(uuid.uuid4())
+        cid = _ensure_valid_uuid(conversation_id)
         now = time.strftime("%Y-%m-%d %H:%M:%S")
 
         # ── 1. Cloud Mode (Supabase PostgreSQL) ──
-        if is_supabase_configured():
+        if is_supabase_configured() and user_id:
             client = get_supabase_admin_client()
             try:
                 res = client.table("conversations").select("*").eq("id", cid).execute()
@@ -45,10 +55,8 @@ class ConversationRepository:
                     "title": title,
                     "language": language,
                     "updated_at": "now()",
+                    "user_id": user_id,
                 }
-                if user_id:
-                    new_row["user_id"] = user_id
-
                 ins = client.table("conversations").insert(new_row).execute()
                 return ins.data[0] if ins.data else new_row
             except Exception as e:
@@ -88,6 +96,7 @@ class ConversationRepository:
         audio_metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Appends a new message turn to the conversation."""
+        conversation_id = _ensure_valid_uuid(conversation_id)
         mid = str(uuid.uuid4())
         meta = audio_metadata or {}
         now = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -96,18 +105,19 @@ class ConversationRepository:
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
-                ConversationRepository.get_or_create_conversation(conversation_id)
-
-                row = {
-                    "id": mid,
-                    "conversation_id": conversation_id,
-                    "role": role,
-                    "content": content,
-                    "audio_metadata": meta,
-                }
-                res = client.table("messages").insert(row).execute()
-                client.table("conversations").update({"updated_at": "now()"}).eq("id", conversation_id).execute()
-                return res.data[0] if res.data else row
+                # Check if conversation exists in Supabase
+                conv_check = client.table("conversations").select("id").eq("id", conversation_id).execute()
+                if conv_check.data and len(conv_check.data) > 0:
+                    row = {
+                        "id": mid,
+                        "conversation_id": conversation_id,
+                        "role": role,
+                        "content": content,
+                        "audio_metadata": meta,
+                    }
+                    res = client.table("messages").insert(row).execute()
+                    client.table("conversations").update({"updated_at": "now()"}).eq("id", conversation_id).execute()
+                    return res.data[0] if res.data else row
             except Exception as e:
                 logger.error("Supabase save_message failed: %s", e)
                 raise RuntimeError(f"Supabase save_message failed: {str(e)}")
@@ -135,6 +145,7 @@ class ConversationRepository:
     @staticmethod
     def get_messages(conversation_id: str, user_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         """Retrieves messages for a conversation, verifying ownership if user_id is provided."""
+        conversation_id = _ensure_valid_uuid(conversation_id)
         # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
@@ -227,6 +238,7 @@ class ConversationRepository:
     @staticmethod
     def delete_conversation(conversation_id: str, user_id: Optional[str] = None) -> bool:
         """Deletes a conversation and its messages while enforcing ownership."""
+        conversation_id = _ensure_valid_uuid(conversation_id)
         # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
