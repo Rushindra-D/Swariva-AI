@@ -2,11 +2,12 @@
 SWARIVA AI — AI Reasoning Engine and Agent Module
 
 Implements a modular AI companion with support for:
-- Empathetic and accessible assistant personality
-- Multilingual responses (English, Telugu, Hindi)
-- Contextual memory and follow-up understanding
-- Modular LLM provider architecture (Rule-based companion fallback + External API hook)
-- Speech-ready text formatting (cleans markdown before Timbre TTS)
+- Empathetic, intelligent, and accessible voice-first companion personality
+- Multilingual responses (English, Telugu, Hindi, and code-mixed conversations)
+- Multi-turn contextual memory and pronoun/subject follow-up resolution
+- Modular LLM provider architecture (Knowledge Companion Engine + External LLM API Hook)
+- Speech-ready text formatting (cleans markdown, stage tags, and symbols before Timbre TTS)
+- Strict conversational rules: NO echoing of user questions, NO generic greeting fallbacks
 """
 import re
 import os
@@ -17,13 +18,20 @@ from dataclasses import dataclass
 
 import httpx
 
-from config import SUPPORTED_LANGUAGES
+from config import (
+    SUPPORTED_LANGUAGES,
+    LLM_API_KEY,
+    LLM_BASE_URL,
+    LLM_MODEL,
+)
 from conversation import ConversationSession
+from intent_classifier import IntentClassifier, IntentType, detect_language_script
+from knowledge_base import KnowledgeCompanionEngine
 
 logger = logging.getLogger("swariva.agent")
 
 
-# ── System Prompt & Core Directives ──
+# ── System Prompt & Spoken Directives for LLMs ──
 SYSTEM_PROMPT = """You are SWARIVA AI — "A voice that understands you."
 You are an empathetic, intelligent, and highly accessible voice-first companion designed primarily for:
 - People with visual impairments
@@ -31,33 +39,74 @@ You are an empathetic, intelligent, and highly accessible voice-first companion 
 - People with limited mobility seeking effortless voice navigation
 - Anyone seeking an intelligent, caring multilingual voice companion
 
-Core Directives:
-1. Tone: Warm, respectful, patient, encouraging, and clear.
-2. Conciseness: Speak clearly in 2-3 sentences where possible so that audio playback remains natural and fatigue-free.
-3. Multilingual: Fluently converse in English, Telugu, and Hindi. Match the user's spoken language.
-4. Boundaries: You are an AI companion, NOT a certified doctor, lawyer, or emergency service. If health or danger is mentioned, gently remind the user to contact their doctor, family, or emergency helpline.
-5. Honesty: If you do not know something, acknowledge it honestly without fabricating answers.
+STRICT RESPONSE RULES:
+1. NEVER echo or repeat the user's question before answering (do NOT say "You asked...", "You said...", "I heard you say...", "You mentioned...").
+2. NEVER respond with "How can I help you?" when a user has already asked a specific question.
+3. Answer the user's request directly, informatively, and warmly.
+4. Keep spoken responses concise (2 to 4 clear, spoken-friendly sentences) so audio playback is smooth and natural.
+5. Multilingual fluency: Converse fluently in the requested language (English, Telugu, or Hindi).
+6. Medical / Safety boundary: You are an AI companion, NOT a medical doctor or emergency service. If severe symptoms are mentioned, advise contacting a doctor or local emergency services (108/112).
+7. Zero markdown formatting: Do not use asterisks, bolding, numbered lists, hashtags, or bracketed stage directions.
 """
 
 
 def clean_text_for_speech(text: str) -> str:
     """
-    Strips markdown symbols, emojis, and formatting artifacts so that
-    Gnani Timbre synthesizes natural, smooth spoken audio.
+    Strips markdown symbols, emojis, stage instructions, and debug tags
+    so that Gnani Timbre synthesizes natural, smooth spoken audio.
+    Preserves authentic Telugu, Hindi, and English punctuation.
     """
+    if not text:
+        return ""
+
+    cleaned = text
     # Remove markdown bold/italics
-    cleaned = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
-    cleaned = re.sub(r"\*([^*]+)\*", r"\1", text)
-    cleaned = re.sub(r"__([^_]+)__", r"\1", text)
-    cleaned = re.sub(r"_([^_]+)_", r"\1", text)
+    cleaned = re.sub(r"\*\*([^*]+)\*\*", r"\1", cleaned)
+    cleaned = re.sub(r"\*([^*]+)\*", r"\1", cleaned)
+    cleaned = re.sub(r"__([^_]+)__", r"\1", cleaned)
+    cleaned = re.sub(r"_([^_]+)_", r"\1", cleaned)
+
     # Remove markdown headers and list markers
     cleaned = re.sub(r"^#+\s*", "", cleaned, flags=re.MULTILINE)
     cleaned = re.sub(r"^[*-]\s+", "", cleaned, flags=re.MULTILINE)
-    # Remove URLs
+    cleaned = re.sub(r"^\d+\.\s+", "", cleaned, flags=re.MULTILINE)
+
+    # Remove bracketed stage cues, e.g. (smiling), [cheerfully], [intent: ...]
+    cleaned = re.sub(r"\[[^\]]*\]", "", cleaned)
+    cleaned = re.sub(r"\([a-zA-Z\s]{3,20}\)", "", cleaned)
+
+    # Remove URLs and hashtags
     cleaned = re.sub(r"https?://\S+", "", cleaned)
+    cleaned = re.sub(r"#(\w+)", r"\1", cleaned)
+
     # Replace multiple spaces/newlines
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
+
+
+def filter_echo_prefixes(text: str, user_query: str) -> str:
+    """
+    Post-processing safety filter:
+    Strictly removes any echo patterns ("You said...", "I heard you say...", "మీరు చెప్పింది విన్నాను...")
+    that may inadvertently be generated by external models or fallback templates.
+    """
+    cleaned = text.strip()
+
+    # Echo prefixes across languages
+    echo_patterns = [
+        r"^(?:I hear you[.,]?\s*(?:You mentioned|You said)?[^:.]*[:.]?\s*)",
+        r"^(?:You mentioned|You asked|You said|I heard you say)[^:.]*[:.]?\s*",
+        r"^(?:మీరు చెప్పింది విన్నాను|మీరు అడిగారు)[^:.]*[:.]?\s*",
+        r"^(?:मैंने आपकी बात सुनी|मैंने सुना कि आपने कहा|आपने पूछा)[^:.]*[:.]?\s*",
+    ]
+    for pattern in echo_patterns:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE).strip()
+
+    # Also strip accidental exact quote of query at the start, e.g. "'Tell me about Diwali'. How can I help?"
+    quoted_query_pat = rf"^['\"]?{re.escape(user_query.strip())}['\"]?[.:,]?\s*"
+    cleaned = re.sub(quoted_query_pat, "", cleaned, flags=re.IGNORECASE).strip()
+
+    return cleaned or text.strip()
 
 
 @dataclass
@@ -78,194 +127,71 @@ class BaseLLMProvider(ABC):
         messages: List[Dict[str, str]],
         system_prompt: str,
         target_language: str,
+        active_subject: Optional[str] = None,
     ) -> str:
         """Generate response text given conversation history and system instructions."""
         pass
 
 
-class RuleBasedCompanionProvider(BaseLLMProvider):
+class KnowledgeCompanionProvider(BaseLLMProvider):
     """
-    Intelligent built-in companion engine tailored for SWARIVA AI.
+    Intelligent built-in companion and reasoning engine for SWARIVA AI.
     Provides immediate, zero-latency, zero-credit companion interaction in
-    English, Hindi, and Telugu for everyday assistance, reminders, and companionship.
+    English, Hindi, and Telugu for general knowledge, culture, technology,
+    reminders, accessibility, and daily conversation.
     """
 
     def __init__(self):
-        self.name = "rule_based_companion"
+        self.name = "knowledge_companion"
 
     async def generate(
         self,
         messages: List[Dict[str, str]],
         system_prompt: str,
         target_language: str,
+        active_subject: Optional[str] = None,
     ) -> str:
         if not messages:
             return self._default_greeting(target_language)
 
-        last_user_msg = messages[-1]["content"].lower().strip()
-        history_context = " ".join([m["content"].lower() for m in messages[:-1]])
+        last_user_msg = messages[-1]["content"].strip()
+        history_dicts = messages[:-1]
 
-        # Language-specific responses
-        lang = target_language.lower()
-        if "te" in lang or "telugu" in lang:
-            return self._handle_telugu(last_user_msg, history_context)
-        elif "hi" in lang or "hindi" in lang:
-            return self._handle_hindi(last_user_msg, history_context)
-        else:
-            return self._handle_english(last_user_msg, history_context)
-
-    def _default_greeting(self, language: str) -> str:
-        if "te" in language:
-            return "నమస్కారం! నేను స్వరివ. మీకు ఈరోజు ఎలా సహాయం చేయగలను?"
-        elif "hi" in language:
-            return "नमस्ते! मैं स्वरिवा हूँ। आज मैं आपकी क्या सहायता कर सकती हूँ?"
-        return "Hello! I am Swariva, your intelligent voice assistant. How can I help you today?"
-
-    def _handle_english(self, query: str, context: str) -> str:
-        # Greetings & casual conversation
-        if any(w in query for w in ["hello", "hi", "hey", "how are you", "what's up", "good morning", "good evening", "good afternoon", "namaste", "hey there"]):
-            if "how are you" in query:
-                return "I'm doing wonderful, thank you for asking! I am right here with you. How is your day going?"
-            return "Hello! I'm Swariva, your voice companion. I am right here with you. How are you feeling today?"
-
-        # Identity
-        if any(w in query for w in ["who are you", "your name", "what are you", "what can you do"]):
-            return (
-                "I am Swariva AI, your multilingual voice companion. I'm designed to assist you with "
-                "conversations, daily reminders, reading text aloud, and keeping you company in English, Hindi, and Telugu."
-            )
-
-        # Loneliness / Emotional support
-        if any(w in query for w in ["lonely", "alone", "sad", "unhappy", "bored", "nobody to talk to"]):
-            return (
-                "I'm here with you. You're never completely alone. Would you like to talk about your day, "
-                "listen to a comforting thought, or would you like me to note down something for you?"
-            )
-
-        # Health / Medical inquiry
-        if any(w in query for w in ["doctor", "chest pain", "heart attack", "emergency", "medicine dose", "pain"]):
-            return (
-                "Please remember that I am an AI companion and cannot provide medical advice. "
-                "If you are feeling unwell or have severe symptoms, please contact your doctor or trusted family member immediately."
-            )
-
-        # Reminders
-        if any(w in query for w in ["remind", "reminder", "alarm", "medicine", "pill", "appointment"]):
-            return (
-                "I would be glad to help you keep track of your reminders! In our full dashboard, "
-                "you can schedule medicine reminders and appointments with voice alerts."
-            )
-
-        # Accessibility / Vision
-        if any(w in query for w in ["blind", "visually impaired", "can't see", "eyesight", "large text"]):
-            return (
-                "SWARIVA AI is built specially with high-contrast accessibility and full voice navigation. "
-                "You can speak every command and I will speak back to you clearly."
-            )
-
-        # Thank you / Farewell
-        if any(w in query for w in ["thank you", "thanks", "bye", "goodbye", "good night"]):
-            return "You're very welcome! Take good care of yourself, and I am always here whenever you need me."
-
-        # Follow-up context handling
-        if any(w in query for w in ["yes", "tell me more", "what else", "continue"]):
-            if "reminder" in context:
-                return "You can say: 'Remind me to take my blood pressure medicine at 8 PM', and I will keep it ready for you."
-            return "I am listening closely. Feel free to ask me anything or share what's on your mind."
-
-        # General helpful companion response
-        return (
-            f"I hear you. You mentioned: '{query}'. As your voice companion, I'm here to support you. "
-            "How would you like to proceed?"
+        # 1. Semantic intent classification
+        intent, entities = IntentClassifier.classify(
+            query=last_user_msg,
+            history=history_dicts,
+            active_subject=active_subject,
         )
 
-    def _handle_hindi(self, query: str, context: str) -> str:
-        # Greetings & casual conversation
-        if any(w in query for w in ["नमस्ते", "हेलो", "हाय", "प्रणाम", "सुप्रभात", "हैलो", "कैसी हो", "कैसा है"]):
-            if any(w in query for w in ["कैसी हो", "कैसा है"]):
-                return "मैं बहुत अच्छी हूँ, पूछने के लिए धन्यवाद! मैं आपके साथ हूँ। आप कैसे हैं?"
-            return "नमस्ते! मैं स्वरिवा हूँ, आपकी आवाज सहायक। आज आप कैसा महसूस कर रहे हैं?"
+        # 2. Knowledge retrieval and direct answer generation
+        response = KnowledgeCompanionEngine.get_response(
+            intent=intent,
+            entities=entities,
+            language=target_language,
+            history=history_dicts,
+            active_subject=active_subject,
+        )
 
-        # Identity
-        if any(w in query for w in ["तुम कौन हो", "आपका नाम", "क्या कर सकती हो"]):
-            return (
-                "मैं स्वरिवा एआई हूँ, आपकी बहुभाषी आवाज साथी। मैं आपसे बातचीत कर सकती हूँ, "
-                "दवाइयों और महत्वपूर्ण कार्यों के रिमाइंडर रख सकती हूँ, और आपके साथ हिंदी, तेलुगु और अंग्रेजी में बात कर सकती हूँ।"
-            )
+        return response
 
-        # Reminders
-        if any(w in query for w in ["दवा", "याद दिलाओ", "रिमाइंडर", "गोली", "डॉक्टर"]):
-            return (
-                "मैं आपकी दवाइयों और जरूरी कामों की याद दिलाने में मदद कर सकती हूँ। "
-                "आप मुझे समय और काम बता सकते हैं, मैं समय पर आपको याद दिलाऊँगी।"
-            )
+    def _default_greeting(self, language: str) -> str:
+        lang = language.lower()
+        if "te" in lang:
+            return "నమస్కారం! నేను స్వరివ. ఈరోజు మీతో మాట్లాడటం చాలా సంతోషంగా ఉంది."
+        elif "hi" in lang:
+            return "नमस्ते! मैं स्वरिवा हूँ। आज आपसे बातचीत करके मुझे बहुत खुशी हो रही है।"
+        return "Hello! I am Swariva. It is wonderful to speak with you today."
 
-        # Emotional support
-        if any(w in query for w in ["अकेला", "उदास", "मन नहीं लग रहा", "बोरे"]):
-            return (
-                "आप बिल्कुल अकेले नहीं हैं, मैं हमेशा आपके साथ हूँ। "
-                "क्या आप अपने दिन के बारे में कुछ बताना चाहेंगे?"
-            )
 
-        # Health disclaimer
-        if any(w in query for w in ["तबीयत खराब", "दर्द", "इमरजेंसी", "अस्पताल"]):
-            return (
-                "कृपया ध्यान दें कि मैं केवल एक एआई सहायक हूँ और डॉक्टर की जगह नहीं ले सकती। "
-                "यदि आप अस्वस्थ महसूस कर रहे हैं, तो तुरंत अपने चिकित्सक या परिवार के सदस्य से संपर्क करें।"
-            )
-
-        # Gratitude
-        if any(w in query for w in ["धन्यवाद", "शुक्रिया", "अलविदा", "बाय"]):
-            return "आपका बहुत-बहुत धन्यवाद! अपना ख्याल रखें, मैं हमेशा आपकी मदद के लिए यहीं हूँ।"
-
-        return f"मैंने आपकी बात सुनी: '{query}'। मैं आपकी किस प्रकार और सहायता करूँ?"
-
-    def _handle_telugu(self, query: str, context: str) -> str:
-        # Greetings & casual conversation
-        if any(w in query for w in ["నమస్కారం", "హలో", "హాయ్", "బాగున్నారా", "నమస్తే", "ఎలా ఉన్నారు"]):
-            if any(w in query for w in ["బాగున్నారా", "ఎలా ఉన్నారు"]):
-                return "నేను చాలా బాగున్నాను, అడిగినందుకు ధన్యవాదాలు! నేను మీతోనే ఉన్నాను. ఈరోజు మీరు ఎలా ఉన్నారు?"
-            return "నమస్కారం! నేను స్వరివ. ఈరోజు మీరు ఎలా ఉన్నారు? నేను మీకు ఎలా సహాయపడగలను?"
-
-        # Identity
-        if any(w in query for w in ["ఎవరు నువ్వు", "నీ పేరు", "ఏమి చేయగలవు"]):
-            return (
-                "నేను స్వరివ AI. దృష్టి లోపం ఉన్నవారు, వృద్ధులు మరియు రోజువారీ సహాయం కోరుకునే వారి కోసం రూపొందించిన వాయిస్ అసిస్టెంట్. "
-                "నేను తెలుగు, హిందీ మరియు ఆంగ్లంలో మీతో మాట్లాడగలను."
-            )
-
-        # Reminders
-        if any(w in query for w in ["మందులు", "గుర్తు చేయి", "రిమైండర్", "సమయం"]):
-            return (
-                "మీ మందులు మరియు ముఖ్యమైన పనుల రిమైండర్లను నేను గుర్తుంచుకుంటాను. "
-                "మీకు ఏ సమయానికి ఏ పని గుర్తుచేయాలో నాకు చెప్పండి."
-            )
-
-        # Emotional support
-        if any(w in query for w in ["ఒంటరిగా", "బాధగా", "బోర్"]):
-            return (
-                "మీరు ఒంటరిగా లేరు, నేను మీతోనే ఉన్నాను. "
-                "మీ రోజు ఎలా గడిచిందో నాతో పంచుకోవాలనుకుంటున్నారా?"
-            )
-
-        # Health disclaimer
-        if any(w in query for w in ["డాక్టర్", "నొప్పి", "అనారోగ్యం", "హాస్పిటల్"]):
-            return (
-                "దయచేసి గమనించండి: నేను ఒక AI సహాయకురాలిని మాత్రమే, డాక్టర్ని కాదు. "
-                "మీకు ఆరోగ్యం బాగోలేకపోతే దయచేసి వెంటనే మీ వైద్యుడిని సంప్రదించండి."
-            )
-
-        # Gratitude
-        if any(w in query for w in ["ధన్యవాదాలు", "థాంక్స్", "బై", "వెళ్ళొస్తా"]):
-            return "చాలా ధన్యవాదాలు! జాగ్రత్తగా ఉండండి, మీకు ఎప్పుడు అవసరమైనా నేను ఇక్కడే ఉంటాను."
-
-        return f"మీరు చెప్పింది విన్నాను: '{query}'. నేను మీకు ఎలా సహాయపడగలను?"
+# Backwards compatibility alias
+RuleBasedCompanionProvider = KnowledgeCompanionProvider
 
 
 class ExternalLLMProvider(BaseLLMProvider):
     """
-    Connects to an external OpenAI-compatible or hosted reasoning API
-    (e.g., Groq, OpenRouter, Together AI, or a custom Gnani Evon vLLM host).
+    Connects to an external OpenAI-compatible hosted reasoning API
+    (e.g., Groq, OpenRouter, Together AI, or local Ollama / vLLM host).
     Configurable entirely via environment variables.
     """
 
@@ -280,23 +206,29 @@ class ExternalLLMProvider(BaseLLMProvider):
         messages: List[Dict[str, str]],
         system_prompt: str,
         target_language: str,
+        active_subject: Optional[str] = None,
     ) -> str:
-        prompt_with_lang = f"{system_prompt}\nTarget response language: {target_language}."
+        prompt_with_lang = (
+            f"{system_prompt}\n\n"
+            f"TARGET RESPONSE LANGUAGE: {target_language.upper()}.\n"
+            f"CONVERSATIONAL CONTEXT SUBJECT: {active_subject or 'General'}.\n"
+            "REMINDER: Give a direct, spoken answer. Never repeat the user's question. Never say 'How can I help you?'."
+        )
         formatted_messages = [{"role": "system", "content": prompt_with_lang}]
         formatted_messages.extend(messages)
 
         payload = {
             "model": self.model,
             "messages": formatted_messages,
-            "temperature": 0.7,
-            "max_tokens": 250,
+            "temperature": 0.6,
+            "max_tokens": 300,
         }
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=25.0) as client:
             resp = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
@@ -306,19 +238,19 @@ class ExternalLLMProvider(BaseLLMProvider):
 class SWARIVAAgent:
     """
     Coordinator agent for SWARIVA AI.
-    Routes queries to the active LLM provider, manages context, and formats
-    responses for text and speech.
+    Routes queries to the active reasoning provider, manages multi-turn context
+    and active subject memory, and formats responses for text and speech.
     """
 
     def __init__(self):
         # Determine provider from environment
-        external_key = os.getenv("LLM_API_KEY", "")
-        external_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-        external_model = os.getenv("LLM_MODEL", "llama-3.1-8b-instant")
+        external_key = os.getenv("LLM_API_KEY", "") or LLM_API_KEY
+        external_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1") or LLM_BASE_URL
+        external_model = os.getenv("LLM_MODEL", "llama-3.1-8b-instant") or LLM_MODEL
 
-        self.fallback_provider = RuleBasedCompanionProvider()
+        self.fallback_provider = KnowledgeCompanionProvider()
 
-        if external_key and not external_key.startswith("placeholder"):
+        if external_key and not external_key.startswith("placeholder") and not external_key.startswith("your_"):
             self.primary_provider: BaseLLMProvider = ExternalLLMProvider(
                 api_key=external_key,
                 base_url=external_url,
@@ -327,22 +259,25 @@ class SWARIVAAgent:
             logger.info("Using External LLM provider: %s", external_model)
         else:
             self.primary_provider = self.fallback_provider
-            logger.info("Using built-in RuleBasedCompanionProvider (zero external cost).")
+            logger.info("Using built-in KnowledgeCompanionProvider (zero external cost, full offline intelligence).")
 
     def _resolve_language(self, user_text: str, session: ConversationSession, requested_lang: str) -> str:
-        """Determines the appropriate output language."""
-        if requested_lang and requested_lang != "auto":
-            return requested_lang
-        if session.preferred_language and session.preferred_language != "auto":
-            return session.preferred_language
+        """
+        Determines the appropriate output language based on request,
+        detected script, and code-mixed vocabulary.
+        """
+        if requested_lang and requested_lang.lower() not in ("auto", ""):
+            return requested_lang.lower()
 
-        # Simple script detection for auto mode
-        # Telugu Unicode range: 0x0C00 - 0x0C7F
-        if any('\u0C00' <= char <= '\u0C7F' for char in user_text):
-            return "telugu"
-        # Devanagari (Hindi) range: 0x0900 - 0x097F
-        if any('\u0900' <= char <= '\u097F' for char in user_text):
-            return "hindi"
+        # Detect script and language markers from input text
+        detected = detect_language_script(user_text)
+        if detected != "english":
+            return detected
+
+        # If user text is English/ambiguous, check if previous turns in session established a language
+        if session.preferred_language and session.preferred_language.lower() not in ("auto", ""):
+            # If user explicitly asked in another script earlier and current turn is short follow-up
+            return session.preferred_language.lower()
 
         return "english"
 
@@ -354,10 +289,26 @@ class SWARIVAAgent:
     ) -> AgentReply:
         """
         Processes a user message, maintains session context, and generates
-        both display text and speech-optimized text.
+        both display text and speech-optimized text with zero echoing.
         """
         # Determine language
         resolved_lang = self._resolve_language(user_message, session, language)
+
+        # Retrieve active subject from session metadata for follow-up resolution
+        active_subject = session.metadata.get("active_subject")
+
+        # Classify intent and identify new subject if present
+        intent, entities = IntentClassifier.classify(
+            query=user_message,
+            history=session.get_history_for_llm(max_turns=4),
+            active_subject=active_subject,
+        )
+
+        # Update active subject if identified
+        new_subject = entities.get("subject")
+        if new_subject and new_subject != "previous_topic":
+            session.metadata["active_subject"] = new_subject
+            active_subject = new_subject
 
         # Add user message to session context
         session.add_user_message(user_message, language=resolved_lang)
@@ -367,23 +318,41 @@ class SWARIVAAgent:
 
         # Attempt generation with primary provider, fall back gracefully
         reply_text = ""
-        provider_used = "rule_based"
+        provider_used = "knowledge_companion"
 
         try:
             reply_text = await self.primary_provider.generate(
                 messages=history,
                 system_prompt=SYSTEM_PROMPT,
                 target_language=resolved_lang,
+                active_subject=active_subject,
             )
             provider_used = getattr(self.primary_provider, "name", "primary")
         except Exception as e:
-            logger.warning("Primary reasoning provider failed (%s). Falling back to built-in companion.", e)
+            logger.warning("Primary reasoning provider failed (%s). Falling back to KnowledgeCompanionProvider.", e)
             reply_text = await self.fallback_provider.generate(
                 messages=history,
                 system_prompt=SYSTEM_PROMPT,
                 target_language=resolved_lang,
+                active_subject=active_subject,
             )
-            provider_used = "rule_based_fallback"
+            provider_used = "knowledge_companion_fallback"
+
+        # Apply safety echo filter
+        reply_text = filter_echo_prefixes(reply_text, user_message)
+
+        # Prevent exact consecutive duplicate response
+        last_bot_reply = session.metadata.get("last_reply")
+        if last_bot_reply and reply_text == last_bot_reply:
+            if "te" in resolved_lang:
+                reply_text += " మీకు ఈ విషయంలో ఇంకేమైనా సందేహాలు ఉన్నాయా?"
+            elif "hi" in resolved_lang:
+                reply_text += " क्या आप इस बारे में कुछ और भी जानना चाहते हैं?"
+            else:
+                reply_text += " Is there any specific part of this you would like to explore further?"
+
+        session.metadata["last_reply"] = reply_text
+        session.metadata["last_intent"] = intent.value
 
         # Record assistant reply in session
         session.add_assistant_message(reply_text, language=resolved_lang)
@@ -400,10 +369,11 @@ class SWARIVAAgent:
                 "session_id": session.session_id,
                 "history_length": len(session.messages),
                 "resolved_language": resolved_lang,
+                "intent": intent.value,
+                "active_subject": active_subject,
             },
         )
 
 
 # Global singleton instance for application use
 agent = SWARIVAAgent()
-

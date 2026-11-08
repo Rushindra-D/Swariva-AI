@@ -48,6 +48,11 @@ SUPABASE_SECRET_KEY: str = os.getenv("SUPABASE_SECRET_KEY", "") or os.getenv("SU
 SUPABASE_PUBLISHABLE_KEY: str = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
 SUPABASE_KEY: str = SUPABASE_SECRET_KEY
 
+# ── LLM Reasoning Configuration (Phase 6 / Modular Provider) ──
+LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+LLM_MODEL: str = os.getenv("LLM_MODEL", "llama-3.1-8b-instant")
+
 # ── Application Configuration ──
 APP_ENV: str = os.getenv("APP_ENV", "development")
 APP_PORT: int = int(os.getenv("APP_PORT", "8000"))
