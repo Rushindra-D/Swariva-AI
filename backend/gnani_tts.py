@@ -16,6 +16,7 @@ import httpx
 
 from config import (
     GNANI_API_KEY,
+    GNANI_TIMBRE_API_KEY,
     GNANI_TTS_ENDPOINT,
     GNANI_TTS_MODEL,
     SUPPORTED_LANGUAGES,
@@ -56,7 +57,7 @@ class GnaniTTS:
         model: str | None = None,
         default_voice: str | None = None,
     ):
-        self.api_key = api_key or GNANI_API_KEY
+        self.api_key = api_key or GNANI_TIMBRE_API_KEY or GNANI_API_KEY
         self.model = model or GNANI_TTS_MODEL
         self.default_voice = default_voice or self._get_default_voice()
         self._validate_setup()

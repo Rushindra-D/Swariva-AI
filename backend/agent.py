@@ -5,28 +5,28 @@ Implements a modular AI companion with support for:
 - Empathetic, intelligent, and accessible voice-first companion personality
 - Multilingual responses (English, Telugu, Hindi, and code-mixed conversations)
 - Multi-turn contextual memory and pronoun/subject follow-up resolution
-- Modular LLM provider architecture (Knowledge Companion Engine + External LLM API Hook)
+- 3-Tier Modular LLM provider architecture (Gnani Evon v3.3, Cloud LLM, Knowledge Companion)
+- Real-time Tool Calling & RAG Pipeline (Weather, Gold Prices, Reminders, Search)
 - Speech-ready text formatting (cleans markdown, stage tags, and symbols before Timbre TTS)
 - Strict conversational rules: NO echoing of user questions, NO generic greeting fallbacks
 """
 import re
 import os
 import logging
-from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
-import httpx
-
-from config import (
-    SUPPORTED_LANGUAGES,
-    LLM_API_KEY,
-    LLM_BASE_URL,
-    LLM_MODEL,
-)
 from conversation import ConversationSession
 from intent_classifier import IntentClassifier, IntentType, detect_language_script
 from knowledge_base import KnowledgeCompanionEngine
+from providers import (
+    BaseLLMProvider,
+    KnowledgeCompanionProvider,
+    EvonLLMProvider,
+    GroqLLMProvider,
+    get_llm_provider,
+)
+from tools import tool_registry, ToolResult
 
 logger = logging.getLogger("swariva.agent")
 
@@ -118,148 +118,26 @@ class AgentReply:
     metadata: Dict[str, Any]
 
 
-class BaseLLMProvider(ABC):
-    """Abstract interface for modular reasoning providers."""
-
-    @abstractmethod
-    async def generate(
-        self,
-        messages: List[Dict[str, str]],
-        system_prompt: str,
-        target_language: str,
-        active_subject: Optional[str] = None,
-    ) -> str:
-        """Generate response text given conversation history and system instructions."""
-        pass
-
-
-class KnowledgeCompanionProvider(BaseLLMProvider):
-    """
-    Intelligent built-in companion and reasoning engine for SWARIVA AI.
-    Provides immediate, zero-latency, zero-credit companion interaction in
-    English, Hindi, and Telugu for general knowledge, culture, technology,
-    reminders, accessibility, and daily conversation.
-    """
-
-    def __init__(self):
-        self.name = "knowledge_companion"
-
-    async def generate(
-        self,
-        messages: List[Dict[str, str]],
-        system_prompt: str,
-        target_language: str,
-        active_subject: Optional[str] = None,
-    ) -> str:
-        if not messages:
-            return self._default_greeting(target_language)
-
-        last_user_msg = messages[-1]["content"].strip()
-        history_dicts = messages[:-1]
-
-        # 1. Semantic intent classification
-        intent, entities = IntentClassifier.classify(
-            query=last_user_msg,
-            history=history_dicts,
-            active_subject=active_subject,
-        )
-
-        # 2. Knowledge retrieval and direct answer generation
-        response = KnowledgeCompanionEngine.get_response(
-            intent=intent,
-            entities=entities,
-            language=target_language,
-            history=history_dicts,
-            active_subject=active_subject,
-        )
-
-        return response
-
-    def _default_greeting(self, language: str) -> str:
-        lang = language.lower()
-        if "te" in lang:
-            return "నమస్కారం! నేను స్వరివ. ఈరోజు మీతో మాట్లాడటం చాలా సంతోషంగా ఉంది."
-        elif "hi" in lang:
-            return "नमस्ते! मैं स्वरिवा हूँ। आज आपसे बातचीत करके मुझे बहुत खुशी हो रही है।"
-        return "Hello! I am Swariva. It is wonderful to speak with you today."
-
-
-# Backwards compatibility alias
+# Backwards compatibility aliases
 RuleBasedCompanionProvider = KnowledgeCompanionProvider
-
-
-class ExternalLLMProvider(BaseLLMProvider):
-    """
-    Connects to an external OpenAI-compatible hosted reasoning API
-    (e.g., Groq, OpenRouter, Together AI, or local Ollama / vLLM host).
-    Configurable entirely via environment variables.
-    """
-
-    def __init__(self, api_key: str, base_url: str, model: str):
-        self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
-        self.model = model
-        self.name = f"external_llm:{model}"
-
-    async def generate(
-        self,
-        messages: List[Dict[str, str]],
-        system_prompt: str,
-        target_language: str,
-        active_subject: Optional[str] = None,
-    ) -> str:
-        prompt_with_lang = (
-            f"{system_prompt}\n\n"
-            f"TARGET RESPONSE LANGUAGE: {target_language.upper()}.\n"
-            f"CONVERSATIONAL CONTEXT SUBJECT: {active_subject or 'General'}.\n"
-            "REMINDER: Give a direct, spoken answer. Never repeat the user's question. Never say 'How can I help you?'."
-        )
-        formatted_messages = [{"role": "system", "content": prompt_with_lang}]
-        formatted_messages.extend(messages)
-
-        payload = {
-            "model": self.model,
-            "messages": formatted_messages,
-            "temperature": 0.6,
-            "max_tokens": 300,
-        }
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"].strip()
+ExternalLLMProvider = GroqLLMProvider
 
 
 class SWARIVAAgent:
     """
     Coordinator agent for SWARIVA AI.
-    Routes queries to the active reasoning provider, manages multi-turn context
-    and active subject memory, and formats responses for text and speech.
+    Routes queries to the active reasoning provider, executes real-time RAG tools,
+    manages multi-turn context and active subject memory, and formats responses for text and speech.
     """
 
     def __init__(self):
-        # Determine provider from environment
-        external_key = os.getenv("LLM_API_KEY", "") or LLM_API_KEY
-        external_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1") or LLM_BASE_URL
-        external_model = os.getenv("LLM_MODEL", "llama-3.1-8b-instant") or LLM_MODEL
-
-        self.fallback_provider = KnowledgeCompanionProvider()
-
-        if external_key and not external_key.startswith("placeholder") and not external_key.startswith("your_"):
-            self.primary_provider: BaseLLMProvider = ExternalLLMProvider(
-                api_key=external_key,
-                base_url=external_url,
-                model=external_model,
-            )
-            logger.info("Using External LLM provider: %s", external_model)
-        else:
-            self.primary_provider = self.fallback_provider
-            logger.info("Using built-in KnowledgeCompanionProvider (zero external cost, full offline intelligence).")
+        # Initialize primary and fallback providers via provider factory
+        self.primary_provider, self.fallback_provider = get_llm_provider()
+        logger.info(
+            "SWARIVA Agent initialized — Primary: %s | Fallback: %s",
+            getattr(self.primary_provider, "name", "unknown"),
+            getattr(self.fallback_provider, "name", "unknown"),
+        )
 
     def _resolve_language(self, user_text: str, session: ConversationSession, requested_lang: str) -> str:
         """
@@ -276,7 +154,6 @@ class SWARIVAAgent:
 
         # If user text is English/ambiguous, check if previous turns in session established a language
         if session.preferred_language and session.preferred_language.lower() not in ("auto", ""):
-            # If user explicitly asked in another script earlier and current turn is short follow-up
             return session.preferred_language.lower()
 
         return "english"
@@ -288,16 +165,16 @@ class SWARIVAAgent:
         language: str = "auto",
     ) -> AgentReply:
         """
-        Processes a user message, maintains session context, and generates
-        both display text and speech-optimized text with zero echoing.
+        Processes a user message, executes real-time tools if needed,
+        maintains session context, and generates display and speech text with zero echoing.
         """
-        # Determine language
+        # 1. Determine language
         resolved_lang = self._resolve_language(user_message, session, language)
 
-        # Retrieve active subject from session metadata for follow-up resolution
+        # 2. Retrieve active subject from session metadata for follow-up resolution
         active_subject = session.metadata.get("active_subject")
 
-        # Classify intent and identify new subject if present
+        # 3. Classify intent and identify new subject if present
         intent, entities = IntentClassifier.classify(
             query=user_message,
             history=session.get_history_for_llm(max_turns=4),
@@ -310,38 +187,57 @@ class SWARIVAAgent:
             session.metadata["active_subject"] = new_subject
             active_subject = new_subject
 
-        # Add user message to session context
+        # 4. Check for Real-Time Tool Execution (Weather, Gold Prices, Reminders, Search)
+        tool_result: Optional[ToolResult] = await tool_registry.execute_matching_tool(
+            query=user_message,
+            context={"user_id": session.user_id},
+        )
+
+        rag_context = None
+        if tool_result and tool_result.success:
+            rag_context = tool_result.get_spoken_text(resolved_lang)
+
+        # 5. Add user message to session context
         session.add_user_message(user_message, language=resolved_lang)
 
-        # Get recent context for reasoning
+        # 6. Get recent conversation history for reasoning
         history = session.get_history_for_llm(max_turns=6)
 
-        # Attempt generation with primary provider, fall back gracefully
+        # 7. Generate response via primary reasoning provider, falling back gracefully
         reply_text = ""
-        provider_used = "knowledge_companion"
+        provider_used = getattr(self.primary_provider, "name", "primary")
 
-        try:
-            reply_text = await self.primary_provider.generate(
-                messages=history,
-                system_prompt=SYSTEM_PROMPT,
-                target_language=resolved_lang,
-                active_subject=active_subject,
-            )
-            provider_used = getattr(self.primary_provider, "name", "primary")
-        except Exception as e:
-            logger.warning("Primary reasoning provider failed (%s). Falling back to KnowledgeCompanionProvider.", e)
-            reply_text = await self.fallback_provider.generate(
-                messages=history,
-                system_prompt=SYSTEM_PROMPT,
-                target_language=resolved_lang,
-                active_subject=active_subject,
-            )
-            provider_used = "knowledge_companion_fallback"
+        # Optimization: If KnowledgeCompanionProvider is primary AND tool produced direct spoken text,
+        # return the tool's verified spoken summary directly with zero delay!
+        if isinstance(self.primary_provider, KnowledgeCompanionProvider) and rag_context:
+            reply_text = rag_context
+            provider_used = f"tool:{tool_result.tool_name}"
+        else:
+            try:
+                reply_text = await self.primary_provider.generate(
+                    messages=history,
+                    system_prompt=SYSTEM_PROMPT,
+                    target_language=resolved_lang,
+                    active_subject=active_subject,
+                    rag_context=rag_context,
+                )
+            except Exception as e:
+                logger.warning(
+                    "Primary reasoning provider failed (%s). Falling back to KnowledgeCompanionProvider.", e
+                )
+                reply_text = await self.fallback_provider.generate(
+                    messages=history,
+                    system_prompt=SYSTEM_PROMPT,
+                    target_language=resolved_lang,
+                    active_subject=active_subject,
+                    rag_context=rag_context,
+                )
+                provider_used = "knowledge_companion_fallback"
 
-        # Apply safety echo filter
+        # 8. Apply safety echo filter
         reply_text = filter_echo_prefixes(reply_text, user_message)
 
-        # Prevent exact consecutive duplicate response
+        # 9. Prevent exact consecutive duplicate response
         last_bot_reply = session.metadata.get("last_reply")
         if last_bot_reply and reply_text == last_bot_reply:
             if "te" in resolved_lang:
@@ -354,10 +250,10 @@ class SWARIVAAgent:
         session.metadata["last_reply"] = reply_text
         session.metadata["last_intent"] = intent.value
 
-        # Record assistant reply in session
+        # 10. Record assistant reply in session
         session.add_assistant_message(reply_text, language=resolved_lang)
 
-        # Clean response for natural voice synthesis via Gnani Timbre
+        # 11. Clean response for natural voice synthesis via Gnani Timbre
         speech_text = clean_text_for_speech(reply_text)
 
         return AgentReply(
@@ -371,6 +267,8 @@ class SWARIVAAgent:
                 "resolved_language": resolved_lang,
                 "intent": intent.value,
                 "active_subject": active_subject,
+                "tool_used": tool_result.tool_name if tool_result else None,
+                "rag_grounded": bool(rag_context),
             },
         )
 

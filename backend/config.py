@@ -11,8 +11,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
 
 # ── Gnani AI Configuration ──
+# Single-key default for backward compatibility
 GNANI_API_KEY: str = os.getenv("GNANI_API_KEY", "")
 GNANI_BASE_URL: str = "https://api.vachana.ai"
+
+# Multi-key architecture (SWARIVA-PRISMA, SWARIVA-TIMBRE, SWARIVA-DEV)
+GNANI_PRISMA_API_KEY: str = os.getenv("GNANI_PRISMA_API_KEY") or GNANI_API_KEY
+GNANI_TIMBRE_API_KEY: str = os.getenv("GNANI_TIMBRE_API_KEY") or GNANI_API_KEY
+GNANI_EVON_API_KEY: str = os.getenv("GNANI_EVON_API_KEY") or os.getenv("EVON_API_KEY", "")
 
 # Gnani API Endpoints (verified from official docs)
 GNANI_STT_ENDPOINT: str = f"{GNANI_BASE_URL}/stt/v3"
@@ -21,6 +27,11 @@ GNANI_TTS_ENDPOINT: str = f"{GNANI_BASE_URL}/api/v1/tts/inference"
 # Default model versions
 GNANI_STT_MODEL: str = "prisma-v3.0"
 GNANI_TTS_MODEL: str = "timbre-v2.5"  # v2.5 has wider voice catalog; v3.0 for expressive tags
+
+# ── Gnani Evon v3.3 Reasoning Model Configuration ──
+EVON_BASE_URL: str = os.getenv("EVON_BASE_URL", "http://localhost:30000/v1")
+EVON_MODEL: str = os.getenv("EVON_MODEL", "gnani/gnani-evon-v3.3-30B-A3B")
+EVON_TIMEOUT_SECONDS: float = float(os.getenv("EVON_TIMEOUT_SECONDS", "30.0"))
 
 # ── Supported Languages ──
 SUPPORTED_LANGUAGES = {

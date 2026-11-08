@@ -16,6 +16,7 @@ import httpx
 
 from config import (
     GNANI_API_KEY,
+    GNANI_PRISMA_API_KEY,
     GNANI_STT_ENDPOINT,
     GNANI_STT_MODEL,
     SUPPORTED_LANGUAGES,
@@ -57,7 +58,7 @@ class GnaniSTT:
     FORMAT_OPTIONS = {"verbatim", "transcribe", "codemix", "transliterate"}
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
-        self.api_key = api_key or GNANI_API_KEY
+        self.api_key = api_key or GNANI_PRISMA_API_KEY or GNANI_API_KEY
         self.model = model or GNANI_STT_MODEL
         self._validate_setup()
 

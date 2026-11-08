@@ -9,10 +9,11 @@
 
 **SWARIVA AI** is an accessible, voice-driven AI companion designed to bridge the accessibility gap for users who cannot easily interact with screens, keyboards, or small text. It provides natural voice conversations, daily routine and medicine reminders, and a supportive presence in **English**, **Hindi**, and **Telugu**.
 
-### Core Voice Technology
-- **Speech-to-Text (STT):** [Gnani AI Prisma v3.0](https://docs.gnani.ai/api/STT/speech-to-text) — High-accuracy multilingual Indic speech recognition.
-- **Text-to-Speech (TTS):** [Gnani AI Timbre v2.5 / v3.0](https://docs.gnani.ai/api/TTS/tts-inference) — Expressive, natural voice synthesis in Indian accents.
-- **AI Reasoning Engine:** Modular companion agent with multi-turn context retention, safety disclaimers, and configurable external LLM hook.
+### Core Voice Technology & Gnani Three-Model Integration
+- **Model 1 — Speech-to-Text (STT):** [Gnani AI Prisma v3.0](https://docs.gnani.ai/api/STT/speech-to-text) — High-accuracy multilingual Indic speech recognition with VAD and 2-second silence auto-termination.
+- **Model 2 — Reasoning & LLM:** [Gnani AI Evon v3.3](https://huggingface.co/gnani/gnani-evon-v3.3-30B-A3B) — 30B MoE model with 3-tier adaptive architecture (Evon Cloud, High-Speed Groq Cloud, Built-in Offline Indic Knowledge Companion).
+- **Model 3 — Text-to-Speech (TTS):** [Gnani AI Timbre v2.5 / v3.0](https://docs.gnani.ai/api/TTS/tts-inference) — Expressive Indian voice synthesis with dynamic speech sanitization.
+- **Real-Time Tools & RAG:** Grounded real-time live tools for Open-Meteo weather, Hyderabad bullion gold prices, voice reminders, and web search.
 - **Database & Auth (Phase 5):** Supabase PostgreSQL with Row Level Security (RLS), persistent dialogue turns, and automatic local SQLite fallback.
 - **Frontend (Phase 4):** Premium accessible dark-themed web app with Web Audio waveforms, live mic streaming, dynamic font sizing, and high-contrast modes.
 
@@ -155,15 +156,23 @@ Send a text message and receive an intelligent companion response with conversat
 
 ## 🧪 Testing
 
-Run the full automated test suite (18 unit & integration tests):
+Run the full automated verification suites:
 
 ```powershell
+# 1. Core API & Database Integration Suite (20 tests)
 python -m pytest tests/ -v
+
+# 2. Conversational Intelligence & Echo Filter Suite (12 tests)
+python backend/test_ai_intelligence.py
+
+# 3. Phase 6 Gnani Three-Model & Real-Time RAG Tools Suite
+python backend/test_phase6_three_models.py
+
+# 4. Live Supabase Cloud PostgreSQL & RLS Verification
+python backend/test_supabase_cloud.py
 ```
 
-All tests pass with 100% green status:
-- `tests/test_backend.py` (13 tests): Health check, info, frontend mount, multilingual text chat, session continuity, clear, validation, voice pipeline.
-- `tests/test_database.py` (5 tests): User signup, profile retrieval, login, JWT token enforcement & 401 rejection, reminder CRUD, conversation persistence.
+All suites achieve **100% green pass** status across all languages and scenarios.
 
 ---
 
@@ -174,7 +183,7 @@ All tests pass with 100% green status:
 - [x] **Phase 3:** FastAPI Backend & Voice-to-Voice AI Agent
 - [x] **Phase 4:** Frontend Development (Accessible Web UI, Waveforms & Mic)
 - [x] **Phase 5:** Supabase Database (User Profiles, History & Reminders)
-- [ ] **Phase 6:** Advanced AI Agent & Intent Recognition
-- [ ] **Phase 7:** End-to-End System Integration
+- [x] **Phase 6:** Advanced AI Agent & Intent Recognition (Gnani Three-Model Integration & Real-Time RAG)
+- [ ] **Phase 7:** End-to-End System Integration & UI Badges
 - [ ] **Phase 8:** Testing & Cloud Deployment (Render/Railway/Vercel)
 - [ ] **Phase 9:** Challenge Submission & Demonstration Video

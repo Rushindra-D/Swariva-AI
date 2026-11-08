@@ -33,7 +33,7 @@ class ReminderRepository:
         now = time.strftime("%Y-%m-%d %H:%M:%S")
 
         # ── 1. Cloud Mode (Supabase PostgreSQL) ──
-        if is_supabase_configured():
+        if is_supabase_configured() and user_id:
             client = get_supabase_admin_client()
             try:
                 row = {
@@ -81,7 +81,7 @@ class ReminderRepository:
     async def list_reminders(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Lists reminders strictly scoped to the user (or guest)."""
         # ── 1. Cloud Mode (Supabase PostgreSQL) ──
-        if is_supabase_configured():
+        if is_supabase_configured() and user_id:
             client = get_supabase_admin_client()
             try:
                 query = client.table("reminders").select("*").order("reminder_datetime", desc=False)
@@ -129,7 +129,7 @@ class ReminderRepository:
         now = time.strftime("%Y-%m-%d %H:%M:%S")
 
         # ── 1. Cloud Mode (Supabase PostgreSQL) ──
-        if is_supabase_configured():
+        if is_supabase_configured() and user_id:
             client = get_supabase_admin_client()
             try:
                 updates = {"updated_at": "now()"}
@@ -201,7 +201,7 @@ class ReminderRepository:
     async def delete_reminder(reminder_id: str, user_id: Optional[str] = None) -> bool:
         """Deletes a reminder record with ownership verification."""
         # ── 1. Cloud Mode (Supabase PostgreSQL) ──
-        if is_supabase_configured():
+        if is_supabase_configured() and user_id:
             client = get_supabase_admin_client()
             try:
                 query = client.table("reminders").delete().eq("id", reminder_id)
