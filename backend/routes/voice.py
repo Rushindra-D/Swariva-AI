@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/v1/voice", tags=["Voice Assistant"])
 stt_client = GnaniSTT()
 tts_client = GnaniTTS()
 
-ALLOWED_EXTENSIONS = {".wav", ".mp3", ".ogg", ".flac", ".aac", ".m4a"}
+ALLOWED_EXTENSIONS = {".wav", ".mp3", ".ogg", ".flac", ".aac", ".m4a", ".webm"}
 MAX_AUDIO_BYTES = 10 * 1024 * 1024  # 10 MB limit
 
 

@@ -32,22 +32,30 @@ document.addEventListener('DOMContentLoaded', () => {
     switch (state) {
       case 'idle':
         micStatus.textContent = 'Tap Microphone to Speak';
-        micTimer.textContent = 'Tap to start (up to 30s)';
+        micTimer.textContent = 'Ready';
         break;
       case 'listening':
         giantMic.classList.add('recording');
-        micStatus.textContent = 'Listening to your voice...';
+        micStatus.textContent = 'Listening...';
         break;
-      case 'processing':
-        micStatus.textContent = 'Transcribing & Thinking (Gnani Prisma)...';
-        micTimer.textContent = 'Processing...';
+      case 'processing_audio':
+        micStatus.textContent = 'Processing audio...';
+        micTimer.textContent = 'Normalizing audio format...';
+        break;
+      case 'recognizing':
+        micStatus.textContent = 'Recognizing speech...';
+        micTimer.textContent = 'Transcribing with Gnani Prisma...';
+        break;
+      case 'generating':
+        micStatus.textContent = 'Generating response...';
+        micTimer.textContent = 'Formulating companion response...';
         break;
       case 'speaking':
-        micStatus.textContent = 'Swariva is speaking (Gnani Timbre)...';
-        micTimer.textContent = 'Voice playback in progress';
+        micStatus.textContent = 'Playing response...';
+        micTimer.textContent = 'Voice playback in progress (Gnani Timbre)';
         break;
       case 'error':
-        micStatus.textContent = customMessage || 'Error occurred. Tap to retry.';
+        micStatus.textContent = customMessage || 'Error occurred. Tap microphone to retry.';
         micTimer.textContent = 'Ready';
         break;
     }
@@ -58,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // User tapped to finish speaking
       voiceRecorder.stop();
       audioController.stopWaveform(waveCanvas);
-      setAgentState('processing');
+      setAgentState('processing_audio');
     } else {
       // Stop any existing speech playback
       audioController.stop();
@@ -69,8 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
             micTimer.textContent = `Recording: 00:${sec < 10 ? '0' : ''}${sec} / 00:30`;
           },
           onStop: async (audioBlob) => {
-            setAgentState('processing');
-            showToast('Sending audio to Gnani Prisma STT...', 'info');
+            setAgentState('recognizing');
+            showToast('Recognizing speech with Gnani Prisma...', 'info', 1800);
 
             try {
               const res = await SwarivaAPI.sendVoiceChat({
@@ -81,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
               });
 
               if (res.success) {
+                setAgentState('generating');
                 // Update transcript card
                 if (transcriptCard && userTranscriptText) {
                   transcriptCard.style.display = 'block';
@@ -109,11 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
               } else {
                 setAgentState('error', res.error || 'Could not recognize speech.');
-                showToast(res.error || 'Speech not recognized. Please speak clearly.', 'error');
+                showToast(res.error || 'Speech not recognized. Please speak clearly.', 'error', 4000);
               }
             } catch (err) {
               setAgentState('error', err.message);
-              showToast(err.message, 'error');
+              showToast(err.message, 'error', 4000);
             }
           },
           onError: (err) => {

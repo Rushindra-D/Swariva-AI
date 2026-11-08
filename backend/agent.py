@@ -122,8 +122,10 @@ class RuleBasedCompanionProvider(BaseLLMProvider):
         return "Hello! I am Swariva, your intelligent voice assistant. How can I help you today?"
 
     def _handle_english(self, query: str, context: str) -> str:
-        # Greetings
-        if any(w in query for w in ["hello", "hi", "hey", "good morning", "good evening", "namaste"]):
+        # Greetings & casual conversation
+        if any(w in query for w in ["hello", "hi", "hey", "how are you", "what's up", "good morning", "good evening", "good afternoon", "namaste", "hey there"]):
+            if "how are you" in query:
+                return "I'm doing wonderful, thank you for asking! I am right here with you. How is your day going?"
             return "Hello! I'm Swariva, your voice companion. I am right here with you. How are you feeling today?"
 
         # Identity
@@ -178,8 +180,10 @@ class RuleBasedCompanionProvider(BaseLLMProvider):
         )
 
     def _handle_hindi(self, query: str, context: str) -> str:
-        # Greetings
-        if any(w in query for w in ["नमस्ते", "हेलो", "हाय", "प्रणाम", "सुप्रभात"]):
+        # Greetings & casual conversation
+        if any(w in query for w in ["नमस्ते", "हेलो", "हाय", "प्रणाम", "सुप्रभात", "हैलो", "कैसी हो", "कैसा है"]):
+            if any(w in query for w in ["कैसी हो", "कैसा है"]):
+                return "मैं बहुत अच्छी हूँ, पूछने के लिए धन्यवाद! मैं आपके साथ हूँ। आप कैसे हैं?"
             return "नमस्ते! मैं स्वरिवा हूँ, आपकी आवाज सहायक। आज आप कैसा महसूस कर रहे हैं?"
 
         # Identity
@@ -217,8 +221,10 @@ class RuleBasedCompanionProvider(BaseLLMProvider):
         return f"मैंने आपकी बात सुनी: '{query}'। मैं आपकी किस प्रकार और सहायता करूँ?"
 
     def _handle_telugu(self, query: str, context: str) -> str:
-        # Greetings
-        if any(w in query for w in ["నమస్కారం", "హలో", "బాగున్నారా", "నమస్తే"]):
+        # Greetings & casual conversation
+        if any(w in query for w in ["నమస్కారం", "హలో", "హాయ్", "బాగున్నారా", "నమస్తే", "ఎలా ఉన్నారు"]):
+            if any(w in query for w in ["బాగున్నారా", "ఎలా ఉన్నారు"]):
+                return "నేను చాలా బాగున్నాను, అడిగినందుకు ధన్యవాదాలు! నేను మీతోనే ఉన్నాను. ఈరోజు మీరు ఎలా ఉన్నారు?"
             return "నమస్కారం! నేను స్వరివ. ఈరోజు మీరు ఎలా ఉన్నారు? నేను మీకు ఎలా సహాయపడగలను?"
 
         # Identity

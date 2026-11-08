@@ -135,7 +135,7 @@ class GnaniSTT:
         # Resolve language code
         lang_code = self._resolve_language(language)
 
-        # Prepare the audio data
+        # Prepare the audio data and normalize to 16kHz mono PCM WAV
         if isinstance(audio_source, bytes):
             audio_data = audio_source
             audio_filename = filename
@@ -144,8 +144,25 @@ class GnaniSTT:
             audio_data = path.read_bytes()
             audio_filename = path.name
 
-        # Build the multipart form data
-        # Using explicit tuple format: (filename, file_bytes, content_type)
+        original_size = len(audio_data)
+        try:
+            from audio_utils import convert_to_pcm16_wav
+            audio_data, detected_format = convert_to_pcm16_wav(audio_data)
+            audio_filename = "speech.wav"
+            logger.info(
+                "Audio normalized for Prisma: format=%s, orig_size=%d, wav_size=%d",
+                detected_format, original_size, len(audio_data),
+            )
+        except Exception as conv_err:
+            logger.error("Audio normalization failed: %s", conv_err)
+            return STTResult(
+                success=False, transcript="", detected_language="",
+                model=self.model, request_id="", processing_time=0.0,
+                raw_response={},
+                error=f"Audio format error: {str(conv_err)}",
+            )
+
+        # Build the multipart form data for Gnani Prisma STT
         files = {"audio_file": (audio_filename, audio_data, "audio/wav")}
         form_data = {
             "model": self.model,
@@ -154,8 +171,8 @@ class GnaniSTT:
         }
 
         logger.info(
-            "Prisma STT request — model=%s, language=%s, format=%s, file=%s",
-            self.model, lang_code, output_format, audio_filename,
+            "Prisma STT request — model=%s, language=%s, format=%s, file=%s, size=%d bytes",
+            self.model, lang_code, output_format, audio_filename, len(audio_data),
         )
 
         try:
@@ -167,7 +184,29 @@ class GnaniSTT:
                     files=files,
                 )
 
-            # Handle HTTP errors
+            # Handle HTTP errors with diagnostic detail
+            if response.status_code == 400:
+                try:
+                    err_json = response.json()
+                    err_msg = (
+                        err_json.get("error", {}).get("message")
+                        or err_json.get("message")
+                        or response.text
+                    )
+                except Exception:
+                    err_msg = response.text
+
+                logger.error(
+                    "Prisma STT HTTP 400 Bad Request — filename=%s, size=%d, model=%s, lang=%s, format=%s, detail=%s",
+                    audio_filename, len(audio_data), self.model, lang_code, output_format, err_msg,
+                )
+                return STTResult(
+                    success=False, transcript="", detected_language="",
+                    model=self.model, request_id="", processing_time=0.0,
+                    raw_response={"status": 400, "error": err_msg},
+                    error=f"Speech recognition rejected audio: {err_msg}",
+                )
+
             if response.status_code == 401:
                 return STTResult(
                     success=False, transcript="", detected_language="",

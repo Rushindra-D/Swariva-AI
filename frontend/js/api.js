@@ -187,7 +187,8 @@ const SwarivaAPI = {
    */
   async sendVoiceChat({ audioBlob, sessionId, language, voice = null }) {
     const formData = new FormData();
-    formData.append('audio_file', audioBlob, 'user_speech.wav');
+    const filename = (audioBlob && audioBlob.type && audioBlob.type.includes('webm')) ? 'user_speech.webm' : 'user_speech.wav';
+    formData.append('audio_file', audioBlob, filename);
     formData.append('session_id', sessionId || getActiveSessionId());
     formData.append('language', language || getStoredLanguage());
     if (voice) {
