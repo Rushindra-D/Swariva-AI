@@ -12,7 +12,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional, Any
 
-from config import SUPABASE_URL, SUPABASE_SECRET_KEY, PROJECT_ROOT
+from config import SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY, PROJECT_ROOT
 
 logger = logging.getLogger("swariva.database")
 
@@ -30,6 +30,10 @@ _admin_client: Optional[Client] = None
 
 def is_supabase_configured() -> bool:
     """Checks whether valid Supabase credentials are configured."""
+    import os
+    if os.getenv("SWARIVA_FORCE_SQLITE", "").lower() in ("1", "true", "yes"):
+        return False
+
     return bool(
         HAS_SUPABASE_LIB
         and SUPABASE_URL
@@ -70,7 +74,9 @@ def get_supabase_user_client(access_token: str) -> Optional[Client]:
 
     try:
         # Create user-scoped client with bearer token
-        client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+        # Prefer publishable (anon) key so PostgREST enforces RLS with role 'authenticated'
+        auth_key = SUPABASE_PUBLISHABLE_KEY if SUPABASE_PUBLISHABLE_KEY else SUPABASE_SECRET_KEY
+        client = create_client(SUPABASE_URL, auth_key)
         client.postgrest.auth(access_token)
         return client
     except Exception as e:

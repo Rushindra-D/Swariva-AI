@@ -29,8 +29,10 @@ async def get_conversation_messages(
 ):
     """
     Retrieves chronological messages for an active or previous conversation.
+    Enforces user isolation.
     """
-    messages = ConversationRepository.get_messages(conversation_id)
+    user_id = current_user["id"] if current_user else None
+    messages = ConversationRepository.get_messages(conversation_id, user_id=user_id)
     return {
         "conversation_id": conversation_id,
         "total_messages": len(messages),

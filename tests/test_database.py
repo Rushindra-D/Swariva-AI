@@ -1,17 +1,22 @@
 """
-SWARIVA AI — Phase 5 Database & Authentication Test Suite
+SWARIVA AI — Local Fallback Database & Authentication Test Suite
+Tests the persistent SQLite fallback storage when offline or running local unit tests.
 Verifies:
 - User signup and login
 - JWT Token authentication and 401 enforcement
 - User profile retrieval
 - Conversation persistence and history retrieval
 - Reminder CRUD (Create, List, Update, Delete)
-- Local SQLite fallback behavior
+- Strict tenant data isolation between users
 """
+import os
 import sys
 import uuid
 import pytest
 from pathlib import Path
+
+# Force SQLite fallback mode for deterministic local testing
+os.environ["SWARIVA_FORCE_SQLITE"] = "1"
 
 # Add backend directory to path
 BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
@@ -134,6 +139,49 @@ def test_reminder_crud():
     assert not any(r["id"] == rem_id for r in list_after)
 
 
+def test_user_tenant_isolation():
+    """Verify that User A cannot view, update, or delete User B's reminders."""
+    # Create User A
+    uA_res = client.post(
+        "/api/v1/auth/signup",
+        json={"email": f"userA_{uuid.uuid4().hex[:6]}@example.com", "password": "Password123!"},
+    ).json()
+    tokenA = uA_res["access_token"]
+    headersA = {"Authorization": f"Bearer {tokenA}"}
+
+    # Create User B
+    uB_res = client.post(
+        "/api/v1/auth/signup",
+        json={"email": f"userB_{uuid.uuid4().hex[:6]}@example.com", "password": "Password123!"},
+    ).json()
+    tokenB = uB_res["access_token"]
+    headersB = {"Authorization": f"Bearer {tokenB}"}
+
+    # User A creates a reminder
+    remA = client.post(
+        "/api/v1/reminders",
+        json={"title": "Secret Medicine for User A", "reminder_datetime": "2026-11-10T09:00:00"},
+        headers=headersA,
+    ).json()
+    remA_id = remA["id"]
+
+    # User B lists reminders: User A's reminder MUST NOT be present
+    listB = client.get("/api/v1/reminders", headers=headersB).json()
+    assert not any(r["id"] == remA_id for r in listB)
+
+    # User B attempts to update User A's reminder: MUST FAIL (404/not found for User B)
+    upd_res = client.put(f"/api/v1/reminders/{remA_id}", json={"is_completed": True}, headers=headersB)
+    assert upd_res.status_code == 404
+
+    # User B attempts to delete User A's reminder: MUST FAIL (404/not found for User B)
+    del_res = client.delete(f"/api/v1/reminders/{remA_id}", headers=headersB)
+    assert del_res.status_code == 404
+
+    # User A can successfully delete their own reminder
+    delA_res = client.delete(f"/api/v1/reminders/{remA_id}", headers=headersA)
+    assert delA_res.status_code == 200
+
+
 def test_conversation_persistence_via_chat():
     """Test that chat turns are persisted to database and retrievable via conversations API."""
     unique_session = f"session_test_{uuid.uuid4().hex[:10]}"
@@ -163,3 +211,46 @@ def test_conversation_persistence_via_chat():
     # Clean up conversation
     del_conv = client.delete(f"/api/v1/conversations/{unique_session}")
     assert del_conv.status_code == 200
+
+
+def test_conversation_tenant_isolation():
+    """Verify that User B cannot view or delete User A's private conversations."""
+    # Create User A
+    uA = client.post(
+        "/api/v1/auth/signup",
+        json={"email": f"conv_userA_{uuid.uuid4().hex[:6]}@example.com", "password": "Password123!"},
+    ).json()
+    tokenA = uA["access_token"]
+    headersA = {"Authorization": f"Bearer {tokenA}"}
+
+    # Create User B
+    uB = client.post(
+        "/api/v1/auth/signup",
+        json={"email": f"conv_userB_{uuid.uuid4().hex[:6]}@example.com", "password": "Password123!"},
+    ).json()
+    tokenB = uB["access_token"]
+    headersB = {"Authorization": f"Bearer {tokenB}"}
+
+    sessionA = f"userA_private_{uuid.uuid4().hex[:8]}"
+
+    # User A sends a private message
+    client.post(
+        "/api/v1/chat",
+        json={"message": "Confidential financial talk", "session_id": sessionA, "language": "english"},
+        headers=headersA,
+    )
+
+    # User A sees conversation
+    listA = client.get("/api/v1/conversations", headers=headersA).json()
+    assert any(c["id"] == sessionA for c in listA["conversations"])
+
+    # User B list conversations: User A's conversation MUST NOT be in User B's list
+    listB = client.get("/api/v1/conversations", headers=headersB).json()
+    assert not any(c["id"] == sessionA for c in listB["conversations"])
+
+    # User B attempts to fetch User A's conversation messages: must be blocked / return 0
+    msgsB = client.get(f"/api/v1/conversations/{sessionA}", headers=headersB).json()
+    assert msgsB["total_messages"] == 0
+
+    # Clean up
+    client.delete(f"/api/v1/conversations/{sessionA}", headers=headersA)

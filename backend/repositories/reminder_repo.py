@@ -1,6 +1,7 @@
 """
 SWARIVA AI — Reminder Repository
 Persistent database storage for daily routine, medicine, and appointment reminders.
+Enforces strict user isolation and explicit cloud vs fallback execution.
 """
 import uuid
 import time
@@ -17,7 +18,7 @@ logger = logging.getLogger("swariva.repo.reminder")
 
 
 class ReminderRepository:
-    """Manages persistent medicine and schedule reminders."""
+    """Manages persistent medicine and schedule reminders with tenant isolation."""
 
     @staticmethod
     async def create_reminder(
@@ -31,6 +32,7 @@ class ReminderRepository:
         rid = str(uuid.uuid4())
         now = time.strftime("%Y-%m-%d %H:%M:%S")
 
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
@@ -49,8 +51,9 @@ class ReminderRepository:
                 return res.data[0] if res.data else row
             except Exception as e:
                 logger.error("Supabase create_reminder failed: %s", e)
+                raise RuntimeError(f"Supabase create_reminder failed: {str(e)}")
 
-        # ── Local SQLite Fallback ──
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
         cursor.execute(
@@ -76,18 +79,23 @@ class ReminderRepository:
 
     @staticmethod
     async def list_reminders(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Lists active and completed reminders."""
+        """Lists reminders strictly scoped to the user (or guest)."""
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
                 query = client.table("reminders").select("*").order("reminder_datetime", desc=False)
                 if user_id:
                     query = query.eq("user_id", user_id)
+                else:
+                    query = query.is_("user_id", "null")
                 res = query.execute()
                 return res.data or []
             except Exception as e:
                 logger.error("Supabase list_reminders failed: %s", e)
+                raise RuntimeError(f"Supabase list_reminders failed: {str(e)}")
 
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
         if user_id:
@@ -96,7 +104,9 @@ class ReminderRepository:
                 (user_id,),
             ).fetchall()
         else:
-            rows = cursor.execute("SELECT * FROM reminders ORDER BY reminder_datetime ASC").fetchall()
+            rows = cursor.execute(
+                "SELECT * FROM reminders WHERE user_id IS NULL ORDER BY reminder_datetime ASC"
+            ).fetchall()
 
         result = []
         for r in rows:
@@ -115,9 +125,10 @@ class ReminderRepository:
         description: Optional[str] = None,
         reminder_datetime: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Updates reminder status or properties."""
+        """Updates reminder status or properties while enforcing ownership."""
         now = time.strftime("%Y-%m-%d %H:%M:%S")
 
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
@@ -134,11 +145,16 @@ class ReminderRepository:
                 query = client.table("reminders").update(updates).eq("id", reminder_id)
                 if user_id:
                     query = query.eq("user_id", user_id)
+                else:
+                    query = query.is_("user_id", "null")
+
                 res = query.execute()
                 return res.data[0] if res.data else None
             except Exception as e:
                 logger.error("Supabase update_reminder failed: %s", e)
+                raise RuntimeError(f"Supabase update_reminder failed: {str(e)}")
 
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
 
@@ -162,11 +178,16 @@ class ReminderRepository:
         if user_id:
             where_clause += " AND user_id = ?"
             params.append(user_id)
+        else:
+            where_clause += " AND user_id IS NULL"
 
         query = f"UPDATE reminders SET {', '.join(set_clauses)} {where_clause}"
         cursor.execute(query, tuple(params))
-        conn.commit()
+        if cursor.rowcount == 0:
+            conn.close()
+            return None
 
+        conn.commit()
         row = cursor.execute("SELECT * FROM reminders WHERE id = ?", (reminder_id,)).fetchone()
         conn.close()
 
@@ -178,25 +199,31 @@ class ReminderRepository:
 
     @staticmethod
     async def delete_reminder(reminder_id: str, user_id: Optional[str] = None) -> bool:
-        """Deletes a reminder record."""
+        """Deletes a reminder record with ownership verification."""
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
                 query = client.table("reminders").delete().eq("id", reminder_id)
                 if user_id:
                     query = query.eq("user_id", user_id)
+                else:
+                    query = query.is_("user_id", "null")
+
                 res = query.execute()
                 return bool(res.data)
             except Exception as e:
                 logger.error("Supabase delete_reminder failed: %s", e)
+                raise RuntimeError(f"Supabase delete_reminder failed: {str(e)}")
 
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
         if user_id:
             cursor.execute("DELETE FROM reminders WHERE id = ? AND user_id = ?", (reminder_id, user_id))
         else:
-            cursor.execute("DELETE FROM reminders WHERE id = ?", (reminder_id,))
+            cursor.execute("DELETE FROM reminders WHERE id = ? AND user_id IS NULL", (reminder_id,))
+        deleted_count = cursor.rowcount
         conn.commit()
         conn.close()
-        return True
-
+        return deleted_count > 0

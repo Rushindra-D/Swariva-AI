@@ -103,36 +103,44 @@ ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 -- ── RLS POLICIES ──────────────────────────────────────────────────────────
 
 -- Profiles Policies
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
     ON public.profiles FOR SELECT
     USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
     ON public.profiles FOR UPDATE
     USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
     ON public.profiles FOR INSERT
     WITH CHECK (auth.uid() = id);
 
 -- Conversations Policies
+DROP POLICY IF EXISTS "Users can view own conversations" ON public.conversations;
 CREATE POLICY "Users can view own conversations"
     ON public.conversations FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own conversations" ON public.conversations;
 CREATE POLICY "Users can insert own conversations"
     ON public.conversations FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own conversations" ON public.conversations;
 CREATE POLICY "Users can update own conversations"
     ON public.conversations FOR UPDATE
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own conversations" ON public.conversations;
 CREATE POLICY "Users can delete own conversations"
     ON public.conversations FOR DELETE
     USING (auth.uid() = user_id);
 
 -- Messages Policies
+DROP POLICY IF EXISTS "Users can view messages from their conversations" ON public.messages;
 CREATE POLICY "Users can view messages from their conversations"
     ON public.messages FOR SELECT
     USING (
@@ -143,6 +151,7 @@ CREATE POLICY "Users can view messages from their conversations"
         )
     );
 
+DROP POLICY IF EXISTS "Users can insert messages into their conversations" ON public.messages;
 CREATE POLICY "Users can insert messages into their conversations"
     ON public.messages FOR INSERT
     WITH CHECK (
@@ -154,36 +163,44 @@ CREATE POLICY "Users can insert messages into their conversations"
     );
 
 -- Reminders Policies
+DROP POLICY IF EXISTS "Users can view own reminders" ON public.reminders;
 CREATE POLICY "Users can view own reminders"
     ON public.reminders FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own reminders" ON public.reminders;
 CREATE POLICY "Users can insert own reminders"
     ON public.reminders FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own reminders" ON public.reminders;
 CREATE POLICY "Users can update own reminders"
     ON public.reminders FOR UPDATE
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own reminders" ON public.reminders;
 CREATE POLICY "Users can delete own reminders"
     ON public.reminders FOR DELETE
     USING (auth.uid() = user_id);
 
 -- Trusted Contacts Policies
+DROP POLICY IF EXISTS "Users can view own contacts" ON public.trusted_contacts;
 CREATE POLICY "Users can view own contacts"
     ON public.trusted_contacts FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can manage own contacts" ON public.trusted_contacts;
 CREATE POLICY "Users can manage own contacts"
     ON public.trusted_contacts FOR ALL
     USING (auth.uid() = user_id);
 
 -- User Settings Policies
+DROP POLICY IF EXISTS "Users can view own settings" ON public.user_settings;
 CREATE POLICY "Users can view own settings"
     ON public.user_settings FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can manage own settings" ON public.user_settings;
 CREATE POLICY "Users can manage own settings"
     ON public.user_settings FOR ALL
     USING (auth.uid() = user_id);

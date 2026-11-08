@@ -1,6 +1,7 @@
 """
 SWARIVA AI — Conversation Repository
 Persistent storage for multi-turn dialogues and message history.
+Enforces strict user isolation and explicit cloud vs fallback execution.
 """
 import uuid
 import time
@@ -18,7 +19,7 @@ logger = logging.getLogger("swariva.repo.conversation")
 
 
 class ConversationRepository:
-    """Manages persistent conversations and dialogue messages."""
+    """Manages persistent conversations and dialogue messages with tenant isolation."""
 
     @staticmethod
     def get_or_create_conversation(
@@ -31,15 +32,14 @@ class ConversationRepository:
         cid = conversation_id or str(uuid.uuid4())
         now = time.strftime("%Y-%m-%d %H:%M:%S")
 
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
-                # Check if exists
                 res = client.table("conversations").select("*").eq("id", cid).execute()
                 if res.data and len(res.data) > 0:
                     return res.data[0]
 
-                # Insert
                 new_row = {
                     "id": cid,
                     "title": title,
@@ -53,8 +53,9 @@ class ConversationRepository:
                 return ins.data[0] if ins.data else new_row
             except Exception as e:
                 logger.error("Supabase get_or_create_conversation failed: %s", e)
+                raise RuntimeError(f"Supabase get_or_create_conversation failed: {str(e)}")
 
-        # ── Local SQLite Fallback ──
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
         row = cursor.execute("SELECT * FROM conversations WHERE id = ?", (cid,)).fetchone()
@@ -91,10 +92,10 @@ class ConversationRepository:
         meta = audio_metadata or {}
         now = time.strftime("%Y-%m-%d %H:%M:%S")
 
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
-                # Ensure conversation exists
                 ConversationRepository.get_or_create_conversation(conversation_id)
 
                 row = {
@@ -105,13 +106,13 @@ class ConversationRepository:
                     "audio_metadata": meta,
                 }
                 res = client.table("messages").insert(row).execute()
-                # Update conversation updated_at
                 client.table("conversations").update({"updated_at": "now()"}).eq("id", conversation_id).execute()
                 return res.data[0] if res.data else row
             except Exception as e:
                 logger.error("Supabase save_message failed: %s", e)
+                raise RuntimeError(f"Supabase save_message failed: {str(e)}")
 
-        # ── Local SQLite Fallback ──
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
         cursor.execute(
@@ -132,11 +133,21 @@ class ConversationRepository:
         }
 
     @staticmethod
-    def get_messages(conversation_id: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """Retrieves chronological messages for a conversation session."""
+    def get_messages(conversation_id: str, user_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieves messages for a conversation, verifying ownership if user_id is provided."""
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
+                # If user_id is given, check conversation ownership
+                if user_id:
+                    conv_check = client.table("conversations").select("user_id").eq("id", conversation_id).execute()
+                    if conv_check.data:
+                        owner = conv_check.data[0].get("user_id")
+                        if owner and owner != user_id:
+                            logger.warning("Unauthorized conversation access attempt: user %s on %s", user_id, conversation_id)
+                            return []
+
                 res = (
                     client.table("messages")
                     .select("*")
@@ -148,10 +159,18 @@ class ConversationRepository:
                 return res.data or []
             except Exception as e:
                 logger.error("Supabase get_messages failed: %s", e)
+                raise RuntimeError(f"Supabase get_messages failed: {str(e)}")
 
-        # ── Local SQLite Fallback ──
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
+
+        if user_id:
+            conv_row = cursor.execute("SELECT user_id FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+            if conv_row and conv_row["user_id"] and conv_row["user_id"] != user_id:
+                conn.close()
+                return []
+
         rows = cursor.execute(
             "SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?",
             (conversation_id, limit),
@@ -162,7 +181,7 @@ class ConversationRepository:
             d = dict(r)
             try:
                 d["audio_metadata"] = json.loads(d["audio_metadata"]) if d["audio_metadata"] else {}
-            except:
+            except Exception:
                 d["audio_metadata"] = {}
             result.append(d)
 
@@ -171,18 +190,23 @@ class ConversationRepository:
 
     @staticmethod
     def list_conversations(user_id: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
-        """Lists active conversations for a user or guest."""
+        """Lists active conversations scoped strictly to user (or guest)."""
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
                 query = client.table("conversations").select("*").order("updated_at", desc=True).limit(limit)
                 if user_id:
                     query = query.eq("user_id", user_id)
+                else:
+                    query = query.is_("user_id", "null")
                 res = query.execute()
                 return res.data or []
             except Exception as e:
                 logger.error("Supabase list_conversations failed: %s", e)
+                raise RuntimeError(f"Supabase list_conversations failed: {str(e)}")
 
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
         if user_id:
@@ -192,7 +216,7 @@ class ConversationRepository:
             ).fetchall()
         else:
             rows = cursor.execute(
-                "SELECT * FROM conversations ORDER BY updated_at DESC LIMIT ?",
+                "SELECT * FROM conversations WHERE user_id IS NULL ORDER BY updated_at DESC LIMIT ?",
                 (limit,),
             ).fetchall()
 
@@ -202,26 +226,30 @@ class ConversationRepository:
 
     @staticmethod
     def delete_conversation(conversation_id: str, user_id: Optional[str] = None) -> bool:
-        """Deletes a conversation and all its associated messages."""
+        """Deletes a conversation and its messages while enforcing ownership."""
+        # ── 1. Cloud Mode (Supabase PostgreSQL) ──
         if is_supabase_configured():
             client = get_supabase_admin_client()
             try:
                 query = client.table("conversations").delete().eq("id", conversation_id)
                 if user_id:
                     query = query.eq("user_id", user_id)
+                else:
+                    query = query.is_("user_id", "null")
                 res = query.execute()
                 return bool(res.data)
             except Exception as e:
                 logger.error("Supabase delete_conversation failed: %s", e)
+                raise RuntimeError(f"Supabase delete_conversation failed: {str(e)}")
 
+        # ── 2. Local Fallback Mode (SQLite) ──
         conn = get_local_db()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
         if user_id:
             cursor.execute("DELETE FROM conversations WHERE id = ? AND user_id = ?", (conversation_id, user_id))
         else:
-            cursor.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
+            cursor.execute("DELETE FROM conversations WHERE id = ? AND user_id IS NULL", (conversation_id,))
         conn.commit()
         conn.close()
         return True
-
