@@ -236,8 +236,13 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             }
           } catch (err) {
-            setAgentState('error', err.message);
-            showToast(err.message, 'error', 4000);
+            console.error('Voice chat request error:', err);
+            const isFetchErr = err.message && (err.message.includes('fetch') || err.message.includes('NetworkError'));
+            const userMsg = isFetchErr
+              ? 'Server unreachable (' + CONFIG.API_BASE_URL + '). Please check backend connection.'
+              : (err.message || 'Error communicating with assistant.');
+            setAgentState('error', userMsg);
+            showToast(userMsg, 'error', 4500);
             if (isContinuousConversationActive) {
               isContinuousConversationActive = false;
             }

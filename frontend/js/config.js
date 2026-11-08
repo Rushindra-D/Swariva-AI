@@ -4,8 +4,22 @@
  */
 
 const CONFIG = {
-  // Configurable Backend API URL (defaults to local FastAPI backend)
-  API_BASE_URL: localStorage.getItem('swariva_api_url') || 'http://127.0.0.1:8000',
+  // Configurable Backend API URL (defaults to current origin if served via HTTP, or 127.0.0.1:8000)
+  get API_BASE_URL() {
+    const custom = localStorage.getItem('swariva_api_url');
+    if (custom && custom.trim()) return custom.trim();
+    if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.protocol.startsWith('http')) {
+      return window.location.origin;
+    }
+    return 'http://127.0.0.1:8000';
+  },
+  set API_BASE_URL(val) {
+    if (val && val.trim()) {
+      localStorage.setItem('swariva_api_url', val.trim());
+    } else {
+      localStorage.removeItem('swariva_api_url');
+    }
+  },
 
   ENDPOINTS: {
     HEALTH: '/health',
