@@ -81,8 +81,9 @@ class EvonLLMProvider(BaseLLMProvider):
         endpoint_url = f"{self.base_url}/chat/completions" if not self.base_url.endswith("/chat/completions") else self.base_url
 
         logger.info("Calling Gnani Evon at %s (model=%s, lang=%s)", endpoint_url, self.model, target_language)
+        timeout_cfg = httpx.Timeout(self.timeout, connect=4.0)
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=timeout_cfg) as client:
                 resp = await client.post(
                     endpoint_url,
                     headers=headers,
