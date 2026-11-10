@@ -6,10 +6,16 @@ Multilingual, voice-first intelligent companion powered by Gnani AI.
 
 API Documentation: http://127.0.0.1:8000/docs
 """
+import sys
 import logging
 from contextlib import asynccontextmanager
-
 from pathlib import Path
+
+# Ensure backend directory is in sys.path for direct or root cloud invocations (Render, Railway, Docker)
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
