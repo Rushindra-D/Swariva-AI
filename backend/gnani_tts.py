@@ -63,11 +63,10 @@ class GnaniTTS:
         self._validate_setup()
 
     def _validate_setup(self) -> None:
-        """Validate that the API key is configured."""
+        """Validate that the API key is configured. Logs a warning rather than raising to allow graceful fallback."""
         if not self.api_key or self.api_key.startswith("placeholder"):
-            raise ValueError(
-                "Gnani API key is not configured. "
-                "Set GNANI_API_KEY in your .env file."
+            logger.warning(
+                "Gnani API key is not configured. Timbre TTS will be unavailable until GNANI_API_KEY is set in environment."
             )
 
     def _get_default_voice(self) -> str:
@@ -142,6 +141,14 @@ class GnaniTTS:
                 success=False, audio_bytes=b"", content_type="",
                 voice="", language="", model=self.model,
                 error="Text cannot be empty.",
+            )
+
+        if not self.api_key or self.api_key.startswith("placeholder"):
+            logger.warning("TTS synthesize skipped: GNANI_API_KEY is not configured in environment.")
+            return TTSResult(
+                success=False, audio_bytes=b"", content_type="",
+                voice=voice or self.default_voice, language=language, model=self.model,
+                error="Gnani API key is not configured.",
             )
 
         # Resolve parameters

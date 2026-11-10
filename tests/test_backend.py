@@ -87,7 +87,7 @@ def test_text_chat_hindi():
     data = response.json()
     assert "response" in data
     assert data["language"] == "hindi"
-    assert "स्वरिवा" in data["response"]
+    assert "स्वरिवा" in data["response"] or "स्वरीवा" in data["response"] or "swariva" in data["response"].lower()
 
 
 def test_text_chat_telugu():

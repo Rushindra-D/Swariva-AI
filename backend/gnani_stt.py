@@ -63,11 +63,10 @@ class GnaniSTT:
         self._validate_setup()
 
     def _validate_setup(self) -> None:
-        """Validate that the API key is configured."""
+        """Validate that the API key is configured. Logs a warning rather than raising to allow graceful fallback."""
         if not self.api_key or self.api_key.startswith("placeholder"):
-            raise ValueError(
-                "Gnani API key is not configured. "
-                "Set GNANI_API_KEY in your .env file."
+            logger.warning(
+                "Gnani API key is not configured. Prisma STT will be unavailable until GNANI_API_KEY is set in environment."
             )
 
     def _get_headers(self) -> dict:
@@ -131,6 +130,19 @@ class GnaniSTT:
             raise ValueError(
                 f"Invalid format: '{output_format}'. "
                 f"Choose from: {', '.join(self.FORMAT_OPTIONS)}"
+            )
+
+        if not self.api_key or self.api_key.startswith("placeholder"):
+            logger.warning("STT transcribe skipped: GNANI_API_KEY is not configured in environment.")
+            return STTResult(
+                success=False,
+                transcript="",
+                detected_language="",
+                model=self.model,
+                request_id="",
+                processing_time=0.0,
+                raw_response={},
+                error="Gnani API key is not configured in environment.",
             )
 
         # Resolve language code

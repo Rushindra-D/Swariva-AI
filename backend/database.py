@@ -85,77 +85,97 @@ def get_supabase_user_client(access_token: str) -> Optional[Client]:
 
 
 # ── LOCAL SQLITE FALLBACK STORAGE ──────────────────────────────────────────
-# Ensures zero-breakage development and offline test execution.
-SQLITE_DB_PATH = PROJECT_ROOT / "database" / "swariva_local.db"
+# Uses writable /tmp in serverless environments (Vercel, AWS Lambda) or in-memory fallback.
+import os
+import tempfile
+
+if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or not os.access(str(PROJECT_ROOT), os.W_OK):
+    SQLITE_DB_PATH = Path(tempfile.gettempdir()) / "swariva_local.db"
+else:
+    SQLITE_DB_PATH = PROJECT_ROOT / "database" / "swariva_local.db"
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS profiles (
+    id TEXT PRIMARY KEY,
+    full_name TEXT,
+    email TEXT UNIQUE,
+    preferred_language TEXT DEFAULT 'auto',
+    created_at TEXT,
+    updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    title TEXT NOT NULL,
+    language TEXT DEFAULT 'auto',
+    created_at TEXT,
+    updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    audio_metadata TEXT DEFAULT '{}',
+    created_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS reminders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    title TEXT NOT NULL,
+    description TEXT,
+    reminder_datetime TEXT NOT NULL,
+    language TEXT DEFAULT 'auto',
+    is_completed INTEGER DEFAULT 0,
+    created_at TEXT,
+    updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS user_settings (
+    id TEXT PRIMARY KEY,
+    user_id TEXT UNIQUE,
+    preferred_language TEXT DEFAULT 'auto',
+    preferred_voice TEXT DEFAULT 'Nalini',
+    autoplay_enabled INTEGER DEFAULT 1,
+    font_size TEXT DEFAULT 'normal',
+    high_contrast_enabled INTEGER DEFAULT 0,
+    created_at TEXT,
+    updated_at TEXT
+);
+"""
 
 
 def init_local_sqlite():
-    """Initializes local SQLite tables mirroring the Supabase schema."""
-    SQLITE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(SQLITE_DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.executescript("""
-    CREATE TABLE IF NOT EXISTS profiles (
-        id TEXT PRIMARY KEY,
-        full_name TEXT,
-        email TEXT UNIQUE,
-        preferred_language TEXT DEFAULT 'auto',
-        created_at TEXT,
-        updated_at TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS conversations (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        title TEXT NOT NULL,
-        language TEXT DEFAULT 'auto',
-        created_at TEXT,
-        updated_at TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        conversation_id TEXT NOT NULL,
-        role TEXT NOT NULL,
-        content TEXT NOT NULL,
-        audio_metadata TEXT DEFAULT '{}',
-        created_at TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS reminders (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        title TEXT NOT NULL,
-        description TEXT,
-        reminder_datetime TEXT NOT NULL,
-        language TEXT DEFAULT 'auto',
-        is_completed INTEGER DEFAULT 0,
-        created_at TEXT,
-        updated_at TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS user_settings (
-        id TEXT PRIMARY KEY,
-        user_id TEXT UNIQUE,
-        preferred_language TEXT DEFAULT 'auto',
-        preferred_voice TEXT DEFAULT 'Nalini',
-        autoplay_enabled INTEGER DEFAULT 1,
-        font_size TEXT DEFAULT 'normal',
-        high_contrast_enabled INTEGER DEFAULT 0,
-        created_at TEXT,
-        updated_at TEXT
-    );
-    """)
-    conn.commit()
-    conn.close()
+    """Initializes local SQLite tables mirroring the Supabase schema safely."""
+    try:
+        SQLITE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(SQLITE_DB_PATH))
+        cursor = conn.cursor()
+        cursor.executescript(SCHEMA_SQL)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.warning("Local SQLite table initialization warning: %s", e)
 
 
 def get_local_db():
-    """Returns a connection to the local SQLite database."""
-    conn = sqlite3.connect(SQLITE_DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Returns a connection to the local SQLite database, falling back to memory if disk access fails."""
+    try:
+        conn = sqlite3.connect(str(SQLITE_DB_PATH))
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception as e:
+        logger.warning("Failed to open SQLite at %s (%s). Using :memory: fallback.", SQLITE_DB_PATH, e)
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.executescript(SCHEMA_SQL)
+        except Exception:
+            pass
+        return conn
 
 
 # Initialize SQLite tables on module import

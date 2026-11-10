@@ -102,7 +102,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={
             "success": False,
             "error": "An internal server error occurred.",
-            "detail": str(exc) if DEBUG else "Contact system administrator.",
+            "detail": str(exc) if str(exc) else "An unexpected error occurred during request processing.",
             "path": request.url.path,
         },
     )
