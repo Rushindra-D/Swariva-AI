@@ -6,6 +6,7 @@ intelligent, multilingual reasoning, general knowledge Q&A, and conversational v
 Supports conversation history, RAG grounding, and spoken-clean formatting.
 """
 import time
+import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 
@@ -49,7 +50,7 @@ class GeminiProvider(BaseLLMProvider):
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-2.5-flash",
+        model: str = "gemini-3.5-flash-lite",
         timeout: float = 30.0,
     ):
         if not api_key:
@@ -65,13 +66,12 @@ class GeminiProvider(BaseLLMProvider):
         self._client = None
 
     def _get_client(self):
-        """Lazily initialize the official Google GenAI async client."""
+        """Lazily initialize the official Google GenAI client."""
         if self._client is None:
             from google import genai
-            from google.genai import types
 
-            http_opts = types.HttpOptions(timeout=int(self.timeout))
-            self._client = genai.Client(api_key=self._api_key, http_options=http_opts)
+            # Initialize client with default verified transport (urllib3/requests) for reliable SSL handshake
+            self._client = genai.Client(api_key=self._api_key)
         return self._client
 
     async def generate(
@@ -167,8 +167,9 @@ class GeminiProvider(BaseLLMProvider):
         try:
             client = self._get_client()
 
-            # Execute asynchronous generation via client.aio
-            response = await client.aio.models.generate_content(
+            # Execute generation via asyncio.to_thread with client.models.generate_content
+            response = await asyncio.to_thread(
+                client.models.generate_content,
                 model=self.model,
                 contents=contents,
                 config=types.GenerateContentConfig(

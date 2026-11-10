@@ -59,7 +59,7 @@ async def test_gemini_generate_success_mocked():
     mock_response.text = "Diwali is the Hindu festival of lights symbolizing the victory of light over darkness."
 
     mock_client = MagicMock()
-    mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+    mock_client.models.generate_content = MagicMock(return_value=mock_response)
 
     with patch.object(provider, "_get_client", return_value=mock_client):
         result = await provider.generate(
@@ -71,7 +71,7 @@ async def test_gemini_generate_success_mocked():
 
         assert "festival of lights" in result
         assert provider.last_latency >= 0.0
-        mock_client.aio.models.generate_content.assert_called_once()
+        mock_client.models.generate_content.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -83,7 +83,7 @@ async def test_gemini_generate_empty_response():
     mock_response.text = ""
 
     mock_client = MagicMock()
-    mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+    mock_client.models.generate_content = MagicMock(return_value=mock_response)
 
     with patch.object(provider, "_get_client", return_value=mock_client):
         with pytest.raises(GeminiProviderError, match="empty response"):
@@ -100,7 +100,7 @@ async def test_gemini_auth_error_handling():
     provider = GeminiProvider(api_key="invalid_key")
 
     mock_client = MagicMock()
-    mock_client.aio.models.generate_content = AsyncMock(
+    mock_client.models.generate_content = MagicMock(
         side_effect=Exception("401 API_KEY_INVALID: The provided API key is invalid.")
     )
 
@@ -119,8 +119,8 @@ async def test_gemini_quota_error_handling():
     provider = GeminiProvider(api_key="quota_exhausted_key")
 
     mock_client = MagicMock()
-    mock_client.aio.models.generate_content = AsyncMock(
-        side_effect=Exception("429 RESOURCE_EXHAUSTED: Quota exceeded for model gemini-2.5-flash.")
+    mock_client.models.generate_content = MagicMock(
+        side_effect=Exception("429 RESOURCE_EXHAUSTED: Quota exceeded for model gemini-3.5-flash-lite.")
     )
 
     with patch.object(provider, "_get_client", return_value=mock_client):
@@ -138,7 +138,7 @@ async def test_gemini_timeout_error_handling():
     provider = GeminiProvider(api_key="valid_key", timeout=15.0)
 
     mock_client = MagicMock()
-    mock_client.aio.models.generate_content = AsyncMock(
+    mock_client.models.generate_content = MagicMock(
         side_effect=Exception("Deadline Exceeded: request timed out")
     )
 

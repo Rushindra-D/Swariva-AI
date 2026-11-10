@@ -169,7 +169,7 @@ async def run_12_point_tests():
     # 12A: Quota exceeded
     with patch.object(mock_provider, "_get_client") as mock_get_client:
         mock_c = MagicMock()
-        mock_c.aio.models.generate_content = AsyncMock(
+        mock_c.models.generate_content = MagicMock(
             side_effect=Exception("429 RESOURCE_EXHAUSTED: Rate limit exceeded")
         )
         mock_get_client.return_value = mock_c
@@ -188,7 +188,7 @@ async def run_12_point_tests():
     # 12B: Invalid API Key / Auth failure
     with patch.object(mock_provider, "_get_client") as mock_get_client:
         mock_c = MagicMock()
-        mock_c.aio.models.generate_content = AsyncMock(
+        mock_c.models.generate_content = MagicMock(
             side_effect=Exception("401 API_KEY_INVALID: The provided API key is invalid")
         )
         mock_get_client.return_value = mock_c
@@ -207,7 +207,7 @@ async def run_12_point_tests():
     # 12C: Timeout handling
     with patch.object(mock_provider, "_get_client") as mock_get_client:
         mock_c = MagicMock()
-        mock_c.aio.models.generate_content = AsyncMock(
+        mock_c.models.generate_content = MagicMock(
             side_effect=Exception("Deadline Exceeded: request timed out")
         )
         mock_get_client.return_value = mock_c
@@ -248,3 +248,4 @@ async def run_12_point_tests():
 
 if __name__ == "__main__":
     asyncio.run(run_12_point_tests())
+
