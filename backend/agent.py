@@ -5,7 +5,7 @@ Implements a modular AI companion with support for:
 - Empathetic, intelligent, and accessible voice-first companion personality
 - Multilingual responses (English, Telugu, Hindi, and code-mixed conversations)
 - Multi-turn contextual memory and pronoun/subject follow-up resolution
-- 3-Tier Modular LLM provider architecture (Gnani Evon v3.3, Cloud LLM, Knowledge Companion)
+- Modular LLM provider architecture (Google Gemini as Tier 1, Knowledge Companion as Tier 2)
 - Real-time Tool Calling & RAG Pipeline (Weather, Gold Prices, Reminders, Search)
 - Speech-ready text formatting (cleans markdown, stage tags, and symbols before Timbre TTS)
 - Strict conversational rules: NO echoing of user questions, NO generic greeting fallbacks
@@ -22,8 +22,12 @@ from knowledge_base import KnowledgeCompanionEngine
 from providers import (
     BaseLLMProvider,
     KnowledgeCompanionProvider,
-    EvonLLMProvider,
-    GroqLLMProvider,
+    GeminiProvider,
+    GeminiProviderError,
+    GeminiAuthError,
+    GeminiQuotaError,
+    GeminiModelError,
+    GeminiTimeoutError,
     get_llm_provider,
 )
 from tools import tool_registry, ToolResult
@@ -120,13 +124,16 @@ class AgentReply:
 
 # Backwards compatibility aliases
 RuleBasedCompanionProvider = KnowledgeCompanionProvider
-ExternalLLMProvider = GroqLLMProvider
+PrimaryLLMProvider = GeminiProvider
+EvonLLMProvider = GeminiProvider
+GroqLLMProvider = GeminiProvider
+ExternalLLMProvider = GeminiProvider
 
 
 class SWARIVAAgent:
     """
     Coordinator agent for SWARIVA AI.
-    Routes queries to the active reasoning provider, executes real-time RAG tools,
+    Routes queries to the active reasoning provider (Google Gemini), executes real-time RAG tools,
     manages multi-turn context and active subject memory, and formats responses for text and speech.
     """
 
@@ -200,10 +207,10 @@ class SWARIVAAgent:
         # 5. Add user message to session context
         session.add_user_message(user_message, language=resolved_lang)
 
-        # 6. Get recent conversation history for reasoning
+        # 6. Get recent conversation history for reasoning (sliding window of 6 turns)
         history = session.get_history_for_llm(max_turns=6)
 
-        # 7. Generate response via primary reasoning provider, falling back gracefully
+        # 7. Generate response via primary reasoning provider (Gemini), handling errors cleanly
         reply_text = ""
         provider_used = getattr(self.primary_provider, "name", "primary")
 
@@ -221,6 +228,17 @@ class SWARIVAAgent:
                     active_subject=active_subject,
                     rag_context=rag_context,
                 )
+            except (GeminiAuthError, GeminiQuotaError, GeminiModelError, GeminiTimeoutError) as ge:
+                # Per Requirement 9: If Gemini fails, display a clear temporary error message.
+                # Do not silently fall back to generic rule-based responses for factual questions.
+                logger.error("Gemini primary provider failed with specific error: %s", ge)
+                if "te" in resolved_lang:
+                    reply_text = f"గూగుల్ జెమిని సర్వీస్ సమస్య: {str(ge)}"
+                elif "hi" in resolved_lang:
+                    reply_text = f"गूगल जेमिनी सेवा त्रुटि: {str(ge)}"
+                else:
+                    reply_text = f"Gemini reasoning service unavailable: {str(ge)}"
+                provider_used = "gemini_error"
             except Exception as e:
                 logger.warning(
                     "Primary reasoning provider failed (%s). Falling back to KnowledgeCompanionProvider.", e
@@ -235,7 +253,12 @@ class SWARIVAAgent:
                 provider_used = "knowledge_companion_fallback"
 
         # 8. Dynamic search fallback for arbitrary questions if reasoning model is unreachable
-        if "unable to reach the gnani evon" in reply_text.lower() or "రీజనింగ్ మోడల్ అందుబాటులో లేదు" in reply_text:
+        if (
+            "unable to reach the google gemini" in reply_text.lower()
+            or "unable to reach the gnani evon" in reply_text.lower()
+            or "జెమిని" in reply_text
+            or "జేమిని" in reply_text
+        ):
             from tools.search_tool import SearchTool
             search_fallback = SearchTool()
             search_res = await search_fallback.execute(user_message)
@@ -246,7 +269,7 @@ class SWARIVAAgent:
         # 9. Apply safety echo filter
         reply_text = filter_echo_prefixes(reply_text, user_message)
 
-        # 9. Prevent exact consecutive duplicate response
+        # 10. Prevent exact consecutive duplicate response
         last_bot_reply = session.metadata.get("last_reply")
         if last_bot_reply and reply_text == last_bot_reply:
             if "te" in resolved_lang:
@@ -259,10 +282,10 @@ class SWARIVAAgent:
         session.metadata["last_reply"] = reply_text
         session.metadata["last_intent"] = intent.value
 
-        # 10. Record assistant reply in session
+        # 11. Record assistant reply in session
         session.add_assistant_message(reply_text, language=resolved_lang)
 
-        # 11. Clean response for natural voice synthesis via Gnani Timbre
+        # 12. Clean response for natural voice synthesis via Gnani Timbre
         speech_text = clean_text_for_speech(reply_text)
 
         return AgentReply(

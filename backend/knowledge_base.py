@@ -436,17 +436,17 @@ class KnowledgeCompanionEngine:
             # Clear, non-generic diagnostic when external reasoning model is not reached
             if target_lang == "telugu":
                 return (
-                    "ఈ ప్రశ్నకు లోతైన వివరణ అందించడానికి జ్ఞాని ఎవోన్ (Gnani Evon) రీజనింగ్ మోడల్ అందుబాటులో లేదు. "
-                    "దయచేసి ఎవోన్ ఎండ్‌పాయింట్‌ను .env లో కాన్ఫిగర్ చేయండి."
+                    "ఈ ప్రశ్నకు లోతైన వివరణ అందించడానికి గూగుల్ జెమిని (Google Gemini) రీజనింగ్ ఇంజిన్ అందుబాటులో లేదు. "
+                    "దయచేసి మీ .env లో GEMINI_API_KEY ను కాన్ఫిగర్ చేయండి."
                 )
             elif target_lang == "hindi":
                 return (
-                    "इस प्रश्न का विस्तृत उत्तर देने के लिए ज्ञानी इवोन (Gnani Evon) रीजनिंग मॉडल उपलब्ध नहीं है। "
-                    "कृपया .env में इवोन एंडपॉइंट कॉन्फ़िगर करें।"
+                    "इस प्रश्न का विस्तृत उत्तर देने के लिए गूगल जेमिनी (Google Gemini) रीजनिंग इंजन उपलब्ध नहीं है। "
+                    "कृपया अपने .env में GEMINI_API_KEY कॉन्फ़िगर करें।"
                 )
             return (
-                "I am currently unable to reach the Gnani Evon reasoning model to answer this question. "
-                "Please configure an active EVON_BASE_URL in your .env to enable full generative reasoning."
+                "I am currently unable to reach the Google Gemini reasoning engine to answer this question. "
+                "Please configure a valid GEMINI_API_KEY in your .env to enable full generative reasoning."
             )
 
         # ── 5. ACCESSIBILITY ──
