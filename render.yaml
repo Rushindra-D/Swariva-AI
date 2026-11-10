@@ -9,3 +9,4 @@ services:
         value: production
       - key: GEMINI_MODEL
         value: gemini-3.5-flash-lite
+
